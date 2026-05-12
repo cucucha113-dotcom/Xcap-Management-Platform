@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XCAP Management Platform — Phase 1: Facebook</title>
+  <meta name="description" content="Xcap Management Platform - Facebook Ads Management Dashboard">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">X</div>
+        <div class="brand-text">
+          <span class="brand-name">XCAP</span>
+          <span class="brand-tag">Management Platform</span>
+        </div>
+      </div>
+
+      <div class="sidebar-user">
+        <div class="user-avatar">ĐN</div>
+        <div class="user-info">
+          <span class="user-name">Nguyễn Đạt</span>
+          <span class="user-role">Super Admin</span>
+        </div>
+        <div class="user-status online"></div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <span class="nav-label">CORE</span>
+          <a class="nav-item active" data-page="overview" onclick="navigateTo('overview')">
+            <span class="nav-icon">📊</span><span>Tổng quan</span>
+          </a>
+          <a class="nav-item" data-page="employees" onclick="navigateTo('employees')">
+            <span class="nav-icon">👥</span><span>Nhân viên</span>
+            <span class="nav-badge">12</span>
+          </a>
+          <a class="nav-item" data-page="accounts" onclick="navigateTo('accounts')">
+            <span class="nav-icon">🔑</span><span>Quản lý TK</span>
+          </a>
+          <a class="nav-item" data-page="browsers" onclick="navigateTo('browsers')">
+            <span class="nav-icon">🌐</span><span>Browser Profiles</span>
+            <span class="nav-badge pulse">4</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <span class="nav-label">MARKETING — FACEBOOK</span>
+          <a class="nav-item" data-page="fb-campaigns" onclick="navigateTo('fb-campaigns')">
+            <span class="nav-icon">📢</span><span>Campaigns</span>
+            <span class="nav-badge pulse">Live</span>
+          </a>
+          <a class="nav-item" data-page="fb-adsets" onclick="navigateTo('fb-adsets')">
+            <span class="nav-icon">🎯</span><span>Ad Sets</span>
+          </a>
+          <a class="nav-item" data-page="fb-spend" onclick="navigateTo('fb-spend')">
+            <span class="nav-icon">💰</span><span>Chi tiêu</span>
+          </a>
+          <a class="nav-item" data-page="fb-creatives" onclick="navigateTo('fb-creatives')">
+            <span class="nav-icon">🎨</span><span>Creatives</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <span class="nav-label">TÀI CHÍNH</span>
+          <a class="nav-item" data-page="recon" onclick="navigateTo('recon')">
+            <span class="nav-icon">🧾</span><span>Đối soát</span>
+            <span class="nav-badge warn">3</span>
+          </a>
+          <a class="nav-item" data-page="cards" onclick="navigateTo('cards')">
+            <span class="nav-icon">💳</span><span>Quản lý thẻ</span>
+          </a>
+          <a class="nav-item" data-page="topup" onclick="navigateTo('topup')">
+            <span class="nav-icon">📋</span><span>Request nạp</span>
+            <span class="nav-badge warn">2</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <span class="nav-label">HỆ THỐNG</span>
+          <a class="nav-item" data-page="audit" onclick="navigateTo('audit')">
+            <span class="nav-icon">📝</span><span>Audit Log</span>
+          </a>
+          <a class="nav-item" data-page="settings" onclick="navigateTo('settings')">
+            <span class="nav-icon">⚙️</span><span>Cài đặt</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sync-status">
+          <span class="sync-dot"></span>
+          <span>Synced 30s ago</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <header class="top-bar">
+        <div class="top-left">
+          <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+          <h1 class="page-title" id="pageTitle">Tổng quan</h1>
+        </div>
+        <div class="top-right">
+          <div class="platform-selector">
+            <div class="platform-chip active">
+              <span class="platform-icon fb">f</span> Facebook
+            </div>
+            <div class="platform-chip disabled" title="Phase 2">
+              <span class="platform-icon gg">G</span> Google
+            </div>
+            <div class="platform-chip disabled" title="Phase 2">
+              <span class="platform-icon tt">♪</span> TikTok
+            </div>
+          </div>
+          <div class="date-range">
+            <span>📅</span>
+            <select id="dateRange" onchange="updateDateRange()">
+              <option value="7">7 ngày qua</option>
+              <option value="14">14 ngày qua</option>
+              <option value="30" selected>30 ngày qua</option>
+              <option value="90">90 ngày qua</option>
+            </select>
+          </div>
+          <div class="notif-bell" title="3 thông báo mới">
+            🔔<span class="notif-count">3</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="content-area" id="contentArea">
+        <!-- Pages will be injected here by JS -->
+      </div>
+    </main>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
