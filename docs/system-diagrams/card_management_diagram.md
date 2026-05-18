@@ -3,6 +3,7 @@
 > **Luồng hiện tại:** Google Forms → Kế toán → xcapwallet.com (thủ công)
 > **Mục tiêu:** Tích hợp luồng request + quản lý thẻ + sync transaction vào XCAP app
 > **External system:** https://app.xcapwallet.com (VNB — Ads Agency Management Platform)
+> **Phân luồng:** Ads Cards (Ngoại sàn) vs E-com Cards (Nội sàn)
 
 ---
 
@@ -242,11 +243,12 @@ erDiagram
     CARD_REQUEST {
         ObjectId _id
         string type "new_card / topup / limit_change"
+        string stream "ngoai_san / noi_san"
         ObjectId requestedBy "GĐ Dự án"
         ObjectId cardId "null nếu new_card"
         ObjectId project
         number requestedAmount "$200"
-        string platform "facebook / google / tiktok"
+        string platform "facebook / google / tiktok / shopee / lazada / tiktok_shop"
         string adAccountId
         string reason "Nạp ads FB tháng 5"
         string status "draft/pending/approved/rejected/executing/completed/failed"
@@ -271,6 +273,7 @@ erDiagram
     PAYMENT_CARD {
         string cardName
         string last4
+        string stream "ngoai_san / noi_san"
         ObjectId employeeId
         string project
         ObjectId bankAccountId
@@ -383,6 +386,8 @@ flowchart LR
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │               FINANCE > CARD MANAGEMENT                       │
+│                                                              │
+│  SWITCH: [ 🌐 Ngoại sàn ] [ 🏪 Nội sàn ] [ ALL* ]          │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐ │
@@ -392,18 +397,22 @@ flowchart LR
 │  └────────────┘ └────────────┘ └────────────┘ └──────────┘ │
 │                                                              │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │ Recent Requests                                      │    │
-│  │                                                      │    │
-│  │  🟡 NV Đạt — Top-up $500 (DA 1, FB) — Pending       │    │
-│  │  ✅ NV Linh — Top-up $200 (DA 2, GG) — Completed    │    │
-│  │  🔴 NV Hùng — New Card (DA 3) — Rejected            │    │
+│  │ 🌐 Ngoại sàn Cards (Ads)                               │    │
+│  │  DA Brand A: 8 cards │ $15,200 limit │ FB+GG+TT    │    │
+│  │  DA Brand B: 5 cards │ $10,000 limit │ FB only     │    │
 │  └─────────────────────────────────────────────────────┘    │
 │                                                              │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │ Cards by Project                                     │    │
-│  │  DA 1: 8 cards │ $15,200 limit │ $4,500 spent       │    │
-│  │  DA 2: 5 cards │ $10,000 limit │ $2,800 spent       │    │
-│  │  DA 3: 3 cards │ $5,000 limit  │ $1,200 spent       │    │
+│  │ 🏪 Nội sàn Cards (E-com)                              │    │
+│  │  DA Brand C: 6 cards │ $8,000 limit  │ Shopee+Lazada│    │
+│  │  DA Brand D: 4 cards │ $5,000 limit  │ TT Shop     │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ Recent Requests                                      │    │
+│  │  🌐 🟡 NV Đạt — Top-up $500 (DA Brand A, FB+GG)        │    │
+│  │  🏪 ✅ NV Linh — Top-up $200 (DA Brand C, Shopee)     │    │
+│  │  🌐 🔴 NV Hùng — New Card (DA Brand B) — Rejected    │    │
 │  └─────────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────────┘
 ```

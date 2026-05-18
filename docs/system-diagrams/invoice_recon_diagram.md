@@ -1,7 +1,8 @@
 # 💰 XCAP — Invoice Reconciliation System Diagram
 
-> **Dựa trên:** Finance Module v2 hiện tại + 6 platforms
+> **Dựa trên:** Finance Module v2 + 6 platforms + phân luồng Ngoại sàn / Nội sàn
 > **5 entities:** BankAccount → PaymentCard → Transaction → Invoice → HoldTracking
+> **2 luồng recon:** Ads Invoices (Ngoại sàn) + Sàn Settlements (Nội sàn)
 
 ---
 
@@ -31,6 +32,7 @@ erDiagram
         string cardName "Visa *1234"
         string last4 "1234"
         string cardGroup "Group A"
+        string stream "ngoai_san / noi_san"
         ObjectId employeeId "NV quản lý"
         ObjectId bankAccountId
         array linkedAccounts "FB / Google / TikTok accounts"
@@ -40,7 +42,8 @@ erDiagram
     TRANSACTION {
         date date
         string merchant "FACEBK *99Q2XLD9S2"
-        string platform "facebook / google / tiktok"
+        string platform "facebook / google / tiktok / shopee / lazada / tiktok_shop"
+        string stream "ngoai_san / noi_san"
         string cardLast4
         number amount "USD"
         number amountVND
@@ -289,29 +292,35 @@ Platform charge → Card bị hold
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                  FINANCE > RECONCILIATION                     │
+│                                                              │
+│  SWITCH: [ 🌐 Ngoại sàn ] [ 🏪 Nội sàn ] [ ALL* ]          │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────┐ │
 │  │ Total Txns │ │ Total Amt  │ │ Match Rate │ │  Holds   │ │
 │  │    150     │ │ ₫45.2M     │ │   85.3%    │ │ 15 active│ │
-│  │            │ │            │ │            │ │ ₫3.6M    │ │
 │  └────────────┘ └────────────┘ └────────────┘ └──────────┘ │
 │                                                              │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │ Reconciliation Status                                │    │
-│  │                                                      │    │
-│  │  ✅ Matched:    120 (80%)  ████████████████░░░░     │    │
-│  │  ⚠️ Partial:     12 (8%)   ██░░░░░░░░░░░░░░░░░░    │    │
-│  │  ❌ Unmatched:    8 (5%)   █░░░░░░░░░░░░░░░░░░░    │    │
-│  │  👻 Orphan:       3 (2%)   ░░░░░░░░░░░░░░░░░░░░    │    │
-│  │  ⏳ Pending:      7 (5%)   █░░░░░░░░░░░░░░░░░░░    │    │
+│  │ 🌐 Ngoại sàn Recon                                  │    │
+│  │  Ads Invoice ↔ Card Transaction                     │    │
+│  │  Facebook:  85 txns │ ₫28.5M │ 88% matched          │    │
+│  │  Google:    35 txns │ ₫10.2M │ 82% matched          │    │
+│  │  TikTok:    30 txns │ ₫6.5M  │ 80% matched          │    │
 │  └─────────────────────────────────────────────────────┘    │
 │                                                              │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │ By Platform                                          │    │
-│  │  Facebook:  85 txns  │ ₫28.5M │ 88% matched        │    │
-│  │  Google:    35 txns  │ ₫10.2M │ 82% matched        │    │
-│  │  TikTok:    30 txns  │ ₫6.5M  │ 80% matched        │    │
+│  │ 🏪 Nội sàn Recon                                    │    │
+│  │  Sàn Settlement ↔ Bank Transfer                     │    │
+│  │  Shopee:    45 settlements │ ₫18.3M │ 91% matched   │    │
+│  │  Lazada:    28 settlements │ ₫9.8M  │ 85% matched   │    │
+│  │  TT Shop:   20 settlements │ ₫5.2M  │ 78% matched   │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ ⚠️ Cross-stream Violations                          │    │
+│  │  ❌ Txn "FACEBK" on E-com Card *5678 → FLAG         │    │
+│  │  ❌ Txn "SHOPEE" on Ads Card *1234 → FLAG            │    │
 │  └─────────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────────┘
 ```

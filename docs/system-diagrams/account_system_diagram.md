@@ -42,6 +42,7 @@ erDiagram
         ObjectId company
         ObjectId head "Trưởng phòng"
         array modules "marketing / finance / hr"
+        string stream "ngoai_san / noi_san / shared"
     }
     
     PROJECT {
@@ -73,6 +74,8 @@ erDiagram
         ObjectId department
         string role "super_admin...viewer"
         string position "Tổng GĐ / GĐ Dự án / Leader / NV"
+        string stream "ngoai_san / noi_san"
+        array platforms "facebook / google / tiktok_ads / shopee / lazada / tiktok_shop"
         ObjectId reportsTo
         string status "active / suspended / offboarded"
         date onboardedAt
@@ -102,9 +105,11 @@ erDiagram
     }
     
     MANAGED_ACCOUNT {
-        string platform "facebook / google / tiktok_ads / shopee / lazada"
+        string platform "facebook / google / tiktok_ads / shopee / lazada / tiktok_shop"
         string accountId
         string accountName
+        string stream "ngoai_san / noi_san"
+        string assetType "ad_account / shop / fanpage / bm"
     }
 ```
 
@@ -402,75 +407,68 @@ sequenceDiagram
 
 ---
 
-## 9. MULTI-COMPANY ARCHITECTURE
+## 9. MULTI-COMPANY ARCHITECTURE (Ngoại sàn / Nội sàn)
 
 ```mermaid
 graph TB
-    subgraph XCAP_SYSTEM["🌐 XCAP SYSTEM (super_admin)"]
+    subgraph XCAP_SYSTEM["🌐 XCAP SYSTEM"]
         direction TB
         
         subgraph XBK["🏢 XBK Media"]
             XBK_CEO["🟠 TGĐ XBK<br/>(company_admin)"]
             
-            subgraph KD["📊 Kinh doanh"]
-                KD_HEAD["🟡 TP Kinh doanh<br/>(dept_head)"]
+            subgraph NS["🌐 Ngoại sàn (FB/GG/TT Ads)"]
+                NS_HEAD["🟡 GĐ Ngoại sàn<br/>(dept_head)"]
                 
-                subgraph DA1["📁 DA 1"]
-                    DA1_DIR["🟡 GĐ Dự án 1"]
-                    L1["🟢 Leader 1"]
-                    L2["🟢 Leader 2"]
-                    NV1["🔵 NV 1"]
-                    NV2["🔵 NV 2"]
-                    NV3["🔵 NV 3"]
+                subgraph DA1["📁 DA Brand A"]
+                    DA1_DIR["🟡 GĐ DA"]
+                    L1["🟢 Leader"]
+                    NV1["🔵 NV1 (FB+GG)"]
+                    NV2["🔵 NV2 (FB+TT)"]
+                    NV3["🔵 NV3 (FB+GG+TT)"]
                 end
                 
-                subgraph DA2["📁 DA 2"]
-                    DA2_DIR["🟡 GĐ Dự án 2"]
-                    L3["🟢 Leader 3"]
-                    NV4["🔵 NV 4"]
+                subgraph DA2["📁 DA Brand B"]
+                    DA2_DIR["🟡 GĐ DA"]
+                    NV4["🔵 NV4 (FB)"]
                 end
             end
             
-            subgraph HR_DEPT["👥 HR"]
+            subgraph NOS["🏪 Nội sàn (Shopee/Lazada/TT Shop)"]
+                NOS_HEAD["🟡 GĐ Nội sàn<br/>(dept_head)"]
+                
+                subgraph DA3["📁 DA Brand C"]
+                    DA3_DIR["🟡 GĐ DA"]
+                    NV5["🔵 NV5 (Shopee+Lazada)"]
+                    NV6["🔵 NV6 (TTShop)"]
+                end
+            end
+            
+            subgraph SHARED["⚙️ Shared (stream: shared)"]
                 HR_HEAD["🟡 TP HR"]
-                HR1["🔵 NV HR"]
-            end
-            
-            subgraph KT["💰 Kế toán"]
                 KT_HEAD["🟡 TP Kế toán"]
-                KT1["🔵 Kế toán viên"]
             end
         end
         
         subgraph T1["🏢 T.1"]
             T1_CEO["🟠 TGĐ T.1"]
-            T1_NV["🔵 NV T.1"]
-        end
-        
-        subgraph PHX["🏢 Phoenix"]
-            PHX_CEO["🟠 TGĐ Phoenix"]
-            PHX_NV["🔵 NV Phoenix"]
-        end
-        
-        subgraph MTG_CO["🏢 MTG"]
-            MTG_CEO["🟠 TGĐ MTG"]
-            MTG_NV["🔵 NV MTG"]
         end
     end
     
-    XBK_CEO --> KD_HEAD
+    XBK_CEO --> NS_HEAD
+    XBK_CEO --> NOS_HEAD
     XBK_CEO --> HR_HEAD
     XBK_CEO --> KT_HEAD
-    KD_HEAD --> DA1_DIR
-    KD_HEAD --> DA2_DIR
+    NS_HEAD --> DA1_DIR
+    NS_HEAD --> DA2_DIR
+    NOS_HEAD --> DA3_DIR
     DA1_DIR --> L1
-    DA1_DIR --> L2
     L1 --> NV1
     L1 --> NV2
     L1 --> NV3
-    T1_CEO --> T1_NV
-    PHX_CEO --> PHX_NV
-    MTG_CEO --> MTG_NV
+    DA2_DIR --> NV4
+    DA3_DIR --> NV5
+    DA3_DIR --> NV6
 ```
 
 ### Isolation Rules (Cách ly dữ liệu)
@@ -478,10 +476,12 @@ graph TB
 | Quy tắc | Mô tả |
 |---|---|
 | **Company Isolation** | TGĐ XBK **KHÔNG** thấy data T.1/Phoenix/MTG |
-| **Department Isolation** | TP Kinh doanh **KHÔNG** thấy data HR/Kế toán |
-| **Project Isolation** | GĐ DA 1 **KHÔNG** thấy NV DA 2 |
+| **Stream Isolation** | GĐ Ngoại sàn **KHÔNG** thấy data Nội sàn, ngược lại |
+| **Project Isolation** | GĐ DA Brand A **KHÔNG** thấy NV DA Brand B |
 | **Team Isolation** | Leader 1 **KHÔNG** thấy NV của Leader 2 |
-| **Cross-reference** | super_admin thấy **TẤT CẢ** companies |
+| **Platform Cross** | NV stream ngoai_san chạy nhiều platform (FB+GG+TT) OK |
+| **Stream Lock** | NV ngoai_san **KHÔNG** được gán shop account |
+| **Cross-reference** | super_admin + TGĐ thấy **CẢ 2 LUỒNG** |
 
 ---
 
