@@ -83,33 +83,60 @@ erDiagram
         string offboardReason
     }
     
-    PERMISSION {
-        array modules "marketing / finance / hr / operations"
-        boolean canViewReports
-        boolean canManageEmployees
-        boolean canManageResources
-        boolean canApproveExpenses
-        string dataScope "all / company / department / team / self / assigned"
-        array customPermissions
+    FEATURE_PERMISSION {
+        string mode "full / custom"
+        boolean assetManagement "view / edit / manage"
+        boolean adManagement "view / edit"
+        boolean finance "view / edit / approve"
+        boolean hr "view / edit"
+        boolean reports "view / export"
+        boolean orgSettings "view / edit"
+        boolean auditLog "view"
+    }
+    
+    ASSET_PERMISSION {
+        string mode "all / exclude / list / tag"
+        array excludeIds "blacklist TKQC/Shop IDs"
+        array includeIds "whitelist TKQC/Shop IDs"
+        array tags "chọn theo tag: DA1, biocare..."
+        array streams "ngoai_san / noi_san"
+    }
+    
+    CUSTOM_ROLE {
+        ObjectId _id
+        string name "Senior Marketer / Junior Accountant"
+        string baseRole "marketer / accountant / ..."
+        ObjectId company
+        object featurePermission "override defaults"
+        object assetPermission "override defaults"
+        ObjectId createdBy
+    }
+    
+    INVITE {
+        ObjectId _id
+        string email
+        string role "10 roles + custom"
+        ObjectId customRoleId "if custom"
+        array stream "ngoai_san / noi_san"
+        object featurePermission
+        object assetPermission
+        ObjectId project
+        string status "pending / accepted / expired / revoked"
+        string token "unique invite token"
+        date expiresAt "7 ngày"
+        ObjectId invitedBy
+        date createdAt
     }
     
     AUDIT_LOG {
         ObjectId _id
-        string action "onboard / offboard / permission_change / role_change / transfer"
+        string action "onboard / offboard / invite / permission_change / role_change / transfer"
         ObjectId targetEmployee
         ObjectId performedBy
         object before
         object after
         string ip
         date timestamp
-    }
-    
-    MANAGED_ACCOUNT {
-        string platform "facebook / google / tiktok_ads / shopee / lazada / tiktok_shop"
-        string accountId
-        string accountName
-        string stream "ngoai_san / noi_san"
-        string assetType "ad_account / shop / fanpage / bm"
     }
 ```
 
@@ -162,31 +189,88 @@ graph TD
 
 | Người tạo | Có thể tạo roles | Phạm vi |
 |---|---|---|
-| `super_admin` | Tất cả roles | Toàn system |
-| `company_admin` | `dept_head`, `team_lead`, tất cả staff, `viewer` | Chỉ trong company mình |
+| `super_admin` | Tất cả roles + custom | Toàn system |
+| `company_admin` | `dept_head`, `team_lead`, tất cả staff, `viewer`, custom | Chỉ trong company mình |
 | `dept_head` | `team_lead`, staff roles, `viewer` | Chỉ trong department mình |
 | `team_lead` | Không tạo được | — |
+
+### Custom Role Builder
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                TẠO CUSTOM ROLE                               │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Bước 1: Đặt tên role                                        │
+│  ┌────────────────────────────────────────────────────┐    │
+│  │ Tên: [ Senior Media Buyer                    ]    │    │
+│  │ Kế thừa từ: [ marketer ▼ ]                        │    │
+│  └────────────────────────────────────────────────────┘    │
+│                                                              │
+│  Bước 2: Tùy chỉnh Feature Permission                        │
+│  ┌────────────────────────────────────────────────────┐    │
+│  │ [x] Quản lý tài sản         (view / edit / manage) │    │
+│  │ [x] Quản lý quảng cáo      (view / edit)          │    │
+│  │ [ ] Tài chính              (view / edit / approve)│    │
+│  │ [ ] Nhân sự                (view / edit)          │    │
+│  │ [x] Báo cáo               (view / export)        │    │
+│  │ [ ] Cài đặt tổ chức       (view / edit)          │    │
+│  │ [ ] Audit log             (view)                 │    │
+│  └────────────────────────────────────────────────────┘    │
+│                                                              │
+│  Bước 3: Tùy chỉnh Asset Permission                          │
+│  ┌────────────────────────────────────────────────────┐    │
+│  │ (o) Toàn bộ tài sản                                │    │
+│  │ ( ) Toàn bộ ngoại trừ: [act_xxx, shop_yyy]       │    │
+│  │ ( ) Chọn theo danh sách: [act_001, act_002]     │    │
+│  │ ( ) Chọn theo tag: [DA1] [biocare]               │    │
+│  │                                                    │    │
+│  │ Stream: [🌐 Ngoại sàn] [🏪 Nội sàn] [Cả 2]      │    │
+│  └────────────────────────────────────────────────────┘    │
+│                                                              │
+│  [ Lưu Custom Role ]                                         │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Ví dụ Custom Roles:
+
+| Custom Role | Base | Feature Override | Asset Override |
+|---|---|---|---|
+| Senior Media Buyer | marketer | +reports(export), +assetMgmt(manage) | Tag: [DA1, DA2] |
+| Junior Accountant | accountant | finance(view only) | Stream: noi_san |
+| Content Lead | content_creator | +adMgmt(edit), +reports | All TKQC |
+| Shop Manager | ops_staff | +assetMgmt, +finance(view) | Tag: [shopee, lazada] |
 
 ---
 
 ## 3. PERMISSION MATRIX
 
-### 3.1 Module Access
+### 3.1 Feature Permission Defaults (10 roles mặc định)
 
-| Role | Marketing | Finance | HR | Operations | Settings |
-|---|:---:|:---:|:---:|:---:|:---:|
-| `super_admin` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `company_admin` | ✅ | ✅ | ✅ | ✅ | ✅ (company) |
-| `dept_head` | ✅* | ✅* | ✅* | ✅* | ❌ |
-| `team_lead` | ✅* | ❌ | ❌ | ❌ | ❌ |
-| `marketer` | ✅ (self) | ❌ | ❌ | ❌ | ❌ |
-| `accountant` | ❌ | ✅ (assigned) | ❌ | ❌ | ❌ |
-| `hr_staff` | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `viewer` | 👁️ | 👁️ | ❌ | ❌ | ❌ |
+| Feature | super_admin | company_admin | dept_head | team_lead | marketer | accountant | hr_staff | ops_staff | content | viewer |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Quản lý tài sản | ✅ | ✅ | ✅ | ✅ | edit | ❌ | ❌ | edit | ❌ | 👁️ |
+| Quản lý QC | ✅ | ✅ | ✅ | ✅ | edit | ❌ | ❌ | ❌ | ❌ | 👁️ |
+| Tài chính | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Nhân sự | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Báo cáo | ✅ | ✅ | ✅ | view | view | view | ❌ | view | ❌ | 👁️ |
+| Cài đặt tổ chức | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Audit log | ✅ | ✅ | view | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
-> *\* = chỉ module của department mình*
+> **Custom Role** kế thừa defaults từ base role, rồi override bằng Feature Permission tùy chỉnh.
 
-### 3.2 Data Scope (Phạm vi dữ liệu)
+### 3.2 Asset Permission — 4 chế độ gán (từ SMIT)
+
+| Mode | Mô tả | Use case |
+|---|---|---|
+| `all` | Toàn bộ TKQC + Shop | TGĐ, GĐ Dept |
+| `exclude` | Tất cả **ngoại trừ** list cụ thể | GĐ DA quản hầu hết, trừ vài TK nhạy cảm |
+| `list` | Chỉ danh sách TKQC/Shop được chọn | NV chỉ quản 3-5 TKQC cụ thể |
+| `tag` | Chọn theo tag (DA1, biocare, shopee_vn...) | Gán theo dự án / brand / platform |
+
+> Kết hợp với **Stream filter**: `streams: ["ngoai_san"]` → chỉ thấy tài sản Ngoại sàn.
+
+### 3.3 Data Scope (Phạm vi dữ liệu)
 
 ```mermaid
 graph LR
@@ -208,29 +292,22 @@ graph LR
     style ASSIGNED fill:#8844FF,color:#fff
 ```
 
-| dataScope | Mô tả | Ví dụ |
-|---|---|---|
-| `all` | Toàn hệ thống | Super admin thấy tất cả companies |
-| `company` | Chỉ company mình | TGĐ XBK thấy tất cả NV XBK, không thấy T.1 |
-| `department` | Chỉ phòng mình | TP Kinh doanh thấy tất cả NV KD |
-| `team` | Chỉ team mình | Leader 1 thấy NV1, NV2, NV3 |
-| `self` | Chỉ data bản thân | Marketer chỉ thấy campaigns mình quản lý |
-| `assigned` | Data được gán | Kế toán chỉ thấy invoices được assign |
-
-### 3.3 Action Permissions
+### 3.4 Action Permissions
 
 | Action | super_admin | company_admin | dept_head | team_lead | staff |
 |---|:---:|:---:|:---:|:---:|:---:|
-| Onboard NV | ✅ | ✅ (company) | ✅ (dept) | ❌ | ❌ |
+| Email invite NV | ✅ | ✅ | ✅ (dept) | ❌ | ❌ |
+| Bulk import CSV | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Offboard NV | ✅ | ✅ (company) | ❌ | ❌ | ❌ |
 | Đổi role | ✅ | ✅ (≤ dept_head) | ❌ | ❌ | ❌ |
-| Thêm quyền module | ✅ | ✅ | ✅ (team) | ❌ | ❌ |
-| Thu hồi quyền | ✅ | ✅ | ✅ (team) | ❌ | ❌ |
+| Tạo custom role | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Gán feature perm | ✅ | ✅ | ✅ (team) | ❌ | ❌ |
+| Gán asset perm | ✅ | ✅ | ✅ (team) | ❌ | ❌ |
 | Chuyển dự án | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Suspend TK | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Xem audit log | ✅ | ✅ | ✅ (dept) | ❌ | ❌ |
-| Manage ad accounts | ✅ | ✅ | ✅ | ✅ | ❌ |
-| View reports | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Manage assets | ✅ | ✅ | ✅ | ✅ | Per perm |
+| View reports | ✅ | ✅ | ✅ | ✅ | Per perm |
 
 ---
 
@@ -275,40 +352,69 @@ stateDiagram-v2
 
 ---
 
-## 5. ONBOARDING FLOW (Chi tiết)
+## 5. ONBOARDING FLOW (2 chế độ: Email Invite + Bulk CSV)
+
+### 5.1 Email Invite Flow
 
 ```mermaid
 sequenceDiagram
     actor Admin as Admin (TGĐ/TP)
-    participant API as /api/accounts/onboard
+    participant API as /api/invites
     participant DB as MongoDB
-    participant Preset as Permission Presets
+    participant Email as Email Service
     participant Audit as Audit Log
-    participant Notify as Telegram/Email
+    actor NV as NV mới
     
-    Admin->>API: POST { name, email, role, dept, company, project, reportsTo }
+    Admin->>API: POST { email, role, stream, featurePerm, assetPerm, project }
     
-    API->>API: Validate (email unique?, role hợp lệ?)
-    API->>API: Check: Admin có quyền tạo role này?
-    API->>API: Check: Admin cùng company?
+    API->>API: Validate (email?, role hợp lệ?, admin có quyền?)
+    API->>DB: Create Invite (status=pending, expiresAt=+7d)
+    API->>Email: Gửi link mời (token unique)
+    API->>Audit: Log action="invite_sent"
+    API-->>Admin: { invite, status: "pending" }
     
-    API->>Preset: Lấy permissions mặc định cho role
-    Preset-->>API: { modules, dataScope, canViewReports... }
+    Note over NV: NV nhận email, click link
+    NV->>API: GET /api/invites/accept?token=xxx
+    API->>API: Validate token (hết hạn? đã dùng?)
     
-    API->>API: Generate employeeCode (XBK-XXX)
-    API->>API: Generate temp password
-    
-    API->>DB: Create Employee
-    API->>DB: Update reportsTo.subordinates
-    
-    alt Có project
-        API->>DB: Add to Project.members
+    alt NV chưa có TK XCAP
+        NV->>API: POST /api/auth/register { name, password }
+        API->>DB: Create Employee + link invite permissions
+    else NV đã có TK
+        API->>DB: Link Employee to Company + apply permissions
     end
     
+    API->>DB: Invite status = "accepted"
     API->>Audit: Log action="onboard"
-    API->>Notify: Gửi welcome message + credentials
+    API-->>NV: Welcome + redirect to dashboard
+```
+
+### 5.2 Bulk Import CSV Flow
+
+```mermaid
+sequenceDiagram
+    actor Admin as Admin (TGĐ)
+    participant APP as XCAP App
+    participant API as /api/accounts/bulk-import
+    participant DB as MongoDB
+    participant Email as Email Service
+    participant Audit as Audit Log
     
-    API-->>Admin: { employee, tempPassword, permissions }
+    Admin->>APP: Upload CSV file
+    Note right of Admin: CSV columns:<br/>name, email, role,<br/>stream, project, dept
+    
+    APP->>API: POST /api/accounts/bulk-import { csv }
+    API->>API: Parse + validate CSV rows
+    
+    loop Mỗi row trong CSV
+        API->>API: Generate employeeCode (XBK-XXX)
+        API->>API: Generate temp password
+        API->>DB: Create Employee + default permissions for role
+        API->>Email: Gửi credentials (email + temp password)
+    end
+    
+    API->>Audit: Log action="bulk_import", count=N
+    API-->>Admin: { imported: 50, failed: 2, errors: [...] }
 ```
 
 ---
@@ -490,30 +596,26 @@ graph TB
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     XCAP DATABASE SCHEMA                        │
+│                     XCAP DATABASE SCHEMA v2                      │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  companies ──┐                                                  │
 │              ├── departments ──┐                                │
 │              │                 ├── employees ──┐                │
-│              │                 │               ├── permissions   │
-│              │                 │               ├── managed_accts │
+│              │                 │               ├── feature_perms │
+│              │                 │               ├── asset_perms   │
 │              │                 │               └── audit_logs    │
+│              │                 │                                 │
+│              ├── custom_roles ─┤ [NEW]                          │
+│              ├── invites ──────┤ [NEW]                          │
 │              │                 │                                 │
 │              ├── projects ─────┤                                │
 │              │                 ├── project_members              │
-│              │                 │                                 │
 │              │                 └── (Marketing data)             │
-│              │                     ├── campaigns                │
-│              │                     ├── ad_accounts              │
-│              │                     ├── daily_metrics            │
-│              │                     └── creatives                │
 │              │                                                  │
 │              └── (Finance data)                                 │
 │                  ├── transactions                               │
-│                  ├── invoices                                   │
-│                  ├── cards                                      │
-│                  └── holds                                      │
+│                  ├── invoices / cards / holds                   │
 │                                                                 │
 │  audit_logs (global — cross all entities)                       │
 │                                                                 │
@@ -526,7 +628,7 @@ graph TB
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    ACCOUNT MANAGEMENT APIs                          │
+│                    ACCOUNT MANAGEMENT APIs v2                        │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
 │  📦 COMPANIES                                                       │
@@ -537,19 +639,31 @@ graph TB
 │  📁 PROJECTS                                                        │
 │  ├── GET    /api/projects                     List (scoped)         │
 │  ├── POST   /api/projects                     Create                │
-│  ├── PUT    /api/projects/:id                 Update                │
 │  └── PUT    /api/projects/:id/members         Add/remove members    │
 │                                                                     │
+│  📨 INVITES [NEW]                                                    │
+│  ├── POST   /api/invites                      Gửi email invite     │
+│  ├── GET    /api/invites                      List pending/accepted │
+│  ├── GET    /api/invites/accept?token=xxx     NV accept invite      │
+│  ├── DELETE /api/invites/:id                  Revoke invite         │
+│  └── POST   /api/accounts/bulk-import         Bulk CSV import       │
+│                                                                     │
 │  👤 ACCOUNT LIFECYCLE                                               │
-│  ├── POST   /api/accounts/onboard             Khởi tạo TK          │
-│  ├── GET    /api/accounts/:id/permissions      Xem quyền            │
-│  ├── POST   /api/accounts/:id/permissions      Thêm quyền           │
-│  ├── DELETE /api/accounts/:id/permissions      Thu hồi quyền        │
+│  ├── GET    /api/accounts/:id/feature-perms    Xem feature perm     │
+│  ├── PUT    /api/accounts/:id/feature-perms    Cập nhật feature     │
+│  ├── GET    /api/accounts/:id/asset-perms      Xem asset perm       │
+│  ├── PUT    /api/accounts/:id/asset-perms      Cập nhật asset       │
 │  ├── PUT    /api/accounts/:id/role             Đổi role              │
 │  ├── PUT    /api/accounts/:id/transfer         Chuyển dự án          │
 │  ├── POST   /api/accounts/:id/suspend          Tạm khóa              │
 │  ├── POST   /api/accounts/:id/reactivate       Kích hoạt lại         │
 │  └── POST   /api/accounts/:id/offboard         Offboard              │
+│                                                                     │
+│  🎭 CUSTOM ROLES [NEW]                                               │
+│  ├── GET    /api/custom-roles                  List (company)       │
+│  ├── POST   /api/custom-roles                  Create custom role   │
+│  ├── PUT    /api/custom-roles/:id              Update                │
+│  └── DELETE /api/custom-roles/:id              Delete                │
 │                                                                     │
 │  📋 AUDIT                                                           │
 │  ├── GET    /api/audit                         List logs (scoped)   │
