@@ -48,6 +48,9 @@
 
 ## 2. SƠ ĐỒ TỔ CHỨC — PHÂN CHUYÊN MÔN
 
+> **Quan trọng:** NV thuộc 1 luồng nhưng có thể triển khai **nhiều nền tảng**
+> trong luồng đó. VD: 1 Media Buyer chạy cả FB + GG + TT Ads.
+
 ```
                         ┌──────────────┐
                         │  Tổng GĐ     │
@@ -61,18 +64,26 @@
       │  (Dept Head)    │            │  (Dept Head)     │
       └────────┬────────┘            └─────────┬────────┘
                │                               │
-     ┌─────────┼─────────┐          ┌──────────┼──────────┐
-     │         │         │          │          │          │
-  ┌──▼──┐  ┌──▼──┐  ┌──▼──┐    ┌──▼──┐   ┌──▼──┐   ┌──▼──┐
-  │DA FB│  │DA GG│  │DA TT│    │DA   │   │DA   │   │DA TT│
-  │Ads  │  │Ads  │  │Ads  │    │Shopee│   │Lazada│   │Shop │
-  └──┬──┘  └──┬──┘  └──┬──┘    └──┬──┘   └──┬──┘   └──┬──┘
-     │        │        │          │         │         │
-  ┌──▼──┐  ┌──▼──┐  ┌──▼──┐    ┌──▼──┐   ┌──▼──┐   ┌──▼──┐
-  │Media│  │Media│  │Media│    │Shop │   │Shop │   │Shop │
-  │Buyer│  │Buyer│  │Buyer│    │Oper.│   │Oper.│   │Oper.│
-  │ x5  │  │ x3  │  │ x3  │    │ x4  │   │ x3  │   │ x4  │
-  └─────┘  └─────┘  └─────┘    └─────┘   └─────┘   └─────┘
+     ┌─────────┼──────────┐         ┌──────────┼──────────┐
+     │         │          │         │          │          │
+  ┌──▼───┐  ┌──▼───┐  ┌──▼───┐  ┌──▼───┐  ┌──▼───┐  ┌──▼───┐
+  │DA 1  │  │DA 2  │  │DA 3  │  │DA 4  │  │DA 5  │  │DA 6  │
+  │Brand │  │Brand │  │Brand │  │Brand │  │Brand │  │Brand │
+  │  A   │  │  B   │  │  C   │  │  D   │  │  E   │  │  F   │
+  └──┬───┘  └──┬───┘  └──┬───┘  └──┬───┘  └──┬───┘  └──┬───┘
+     │         │         │         │         │         │
+  ┌──▼────────────────────┐     ┌──▼────────────────────┐
+  │  Media Buyer x11      │     │  Shop Operator x11    │
+  │                       │     │                       │
+  │  Mỗi NV có thể chạy: │     │  Mỗi NV có thể chạy: │
+  │  ├── FB Ads ✅        │     │  ├── Shopee ✅        │
+  │  ├── GG Ads ✅        │     │  ├── Lazada ✅        │
+  │  └── TT Ads ✅        │     │  └── TT Shop ✅       │
+  │                       │     │                       │
+  │  Gán theo DỰ ÁN,     │     │  Gán theo DỰ ÁN,     │
+  │  không gán theo       │     │  không gán theo       │
+  │  nền tảng             │     │  nền tảng             │
+  └───────────────────────┘     └───────────────────────┘
 ```
 
 ---
@@ -90,7 +101,9 @@
 │      → Profile Nội sàn KHÔNG được login ads manager            │
 │                                                                 │
 │  2️⃣  MỖI NHÂN VIÊN thuộc ĐÚNG 1 LUỒNG tại 1 thời điểm       │
-│      → Media Buyer ≠ Shop Operator                             │
+│      → Nhưng có thể chạy NHIỀU NỀN TẢNG trong luồng đó       │
+│      → VD: Media Buyer chạy cả FB + GG + TT Ads               │
+│      → VD: Shop Operator quản cả Shopee + Lazada              │
 │      → Chuyển luồng = chuyển dự án (có audit trail)            │
 │                                                                 │
 │  3️⃣  MỖI TKQC / SHOP chỉ gán cho 1 NV chính + 1 NV backup    │
@@ -297,12 +310,20 @@
 │  └────────────────────────────────────────────────────────┘  │
 │                                                              │
 │  ┌────────────────────────────────────────────────────────┐  │
-│  │ Rule 2: EMPLOYEE STREAM ASSIGNMENT                    │  │
+│  │ Rule 2: EMPLOYEE STREAM + MULTI-PLATFORM              │  │
 │  │                                                        │  │
 │  │ employee.stream = "ngoai_san" | "noi_san"             │  │
-│  │ employee.roles = ["media_buyer"] | ["shop_operator"]  │  │
+│  │ employee.platforms = ["facebook","google","tiktok"]   │  │
+│  │   → NV chọn 1+ platform trong luồng được gán         │  │
+│  │                                                        │  │
+│  │ Ví dụ hợp lệ:                                         │  │
+│  │   ✅ stream=ngoai_san, platforms=[FB, GG]              │  │
+│  │   ✅ stream=ngoai_san, platforms=[FB, GG, TT]          │  │
+│  │   ✅ stream=noi_san, platforms=[Shopee, Lazada]        │  │
+│  │   ❌ stream=ngoai_san, platforms=[FB, Shopee] ← BLOCK │  │
 │  │                                                        │  │
 │  │ Constraint:                                            │  │
+│  │   platforms[] phải thuộc đúng stream                   │  │
 │  │   NV ngoai_san KHÔNG được gán shop account            │  │
 │  │   NV noi_san KHÔNG được gán ad account                │  │
 │  │   Chuyển luồng → phải qua HR approval + audit log    │  │
