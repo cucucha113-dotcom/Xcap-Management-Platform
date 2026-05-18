@@ -1,337 +1,390 @@
-# Quản lý Tài sản Đa Nền Tảng — System Diagram
+# Quản lý Tài sản Đa Nền Tảng v2 — Phân luồng Ngoại sàn / Nội sàn
 
-> Module mới cho XCAP Management Platform
-> Lấy cảm hứng từ SMIT Agency, mở rộng cho 6 nền tảng
+> Thiết kế phân tách 2 hệ kênh chuyên môn, tránh chồng chéo tài sản & nhân sự
 
 ---
 
-## 1. TỔNG QUAN MODULE
+## 1. TỔNG QUAN 2 LUỒNG DỰ ÁN
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                     XCAP MANAGEMENT PLATFORM                          │
+│                                                                        │
+│  ┌─────────────────────────────┐  ┌──────────────────────────────┐    │
+│  │     🌐 NGOẠI SÀN            │  │      🏪 NỘI SÀN              │    │
+│  │     (Off-Platform Ads)      │  │      (On-Platform E-com)     │    │
+│  │                             │  │                              │    │
+│  │  Kênh:                      │  │  Kênh:                       │    │
+│  │  ├── Facebook Ads           │  │  ├── TikTok Shop             │    │
+│  │  ├── Google Ads             │  │  ├── Shopee                  │    │
+│  │  └── TikTok Ads             │  │  └── Lazada                  │    │
+│  │                             │  │                              │    │
+│  │  Nhân sự:                   │  │  Nhân sự:                    │    │
+│  │  ├── Media Buyer            │  │  ├── Shop Operator           │    │
+│  │  ├── Campaign Manager       │  │  ├── Listing Specialist      │    │
+│  │  └── Creative Specialist    │  │  └── E-com Marketer          │    │
+│  │                             │  │                              │    │
+│  │  Tài sản chính:             │  │  Tài sản chính:              │    │
+│  │  ├── TKQC (Ad Accounts)     │  │  ├── Shop (Seller Account)   │    │
+│  │  ├── BM / MCC / BC          │  │  ├── Products (Listings)     │    │
+│  │  ├── Fanpage                │  │  ├── Orders                  │    │
+│  │  └── Payment Cards          │  │  └── Voucher / Flash Sale    │    │
+│  │                             │  │                              │    │
+│  │  KPI:                       │  │  KPI:                        │    │
+│  │  ├── CPA, ROAS, CTR        │  │  ├── GMV, Orders, Conv Rate  │    │
+│  │  ├── Spend, Impressions    │  │  ├── Revenue, AOV            │    │
+│  │  └── CPM, Frequency        │  │  └── Product Views, ATC      │    │
+│  └─────────────────────────────┘  └──────────────────────────────┘    │
+│                                                                        │
+│  ┌──────────────────────────────────────────────────────────────┐      │
+│  │                    SHARED CORE LAYER                         │      │
+│  │  Auth & RBAC │ Employee Dir │ Browser Profiles │ Finance     │      │
+│  │  Audit Log │ Notifications │ Reports │ xcapwallet.com        │      │
+│  └──────────────────────────────────────────────────────────────┘      │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. SƠ ĐỒ TỔ CHỨC — PHÂN CHUYÊN MÔN
+
+```
+                        ┌──────────────┐
+                        │  Tổng GĐ     │
+                        │  (Company)   │
+                        └──────┬───────┘
+                               │
+               ┌───────────────┼───────────────┐
+               │                               │
+      ┌────────▼────────┐            ┌─────────▼────────┐
+      │  GĐ NGOẠI SÀN  │            │  GĐ NỘI SÀN     │
+      │  (Dept Head)    │            │  (Dept Head)     │
+      └────────┬────────┘            └─────────┬────────┘
+               │                               │
+     ┌─────────┼─────────┐          ┌──────────┼──────────┐
+     │         │         │          │          │          │
+  ┌──▼──┐  ┌──▼──┐  ┌──▼──┐    ┌──▼──┐   ┌──▼──┐   ┌──▼──┐
+  │DA FB│  │DA GG│  │DA TT│    │DA   │   │DA   │   │DA TT│
+  │Ads  │  │Ads  │  │Ads  │    │Shopee│   │Lazada│   │Shop │
+  └──┬──┘  └──┬──┘  └──┬──┘    └──┬──┘   └──┬──┘   └──┬──┘
+     │        │        │          │         │         │
+  ┌──▼──┐  ┌──▼──┐  ┌──▼──┐    ┌──▼──┐   ┌──▼──┐   ┌──▼──┐
+  │Media│  │Media│  │Media│    │Shop │   │Shop │   │Shop │
+  │Buyer│  │Buyer│  │Buyer│    │Oper.│   │Oper.│   │Oper.│
+  │ x5  │  │ x3  │  │ x3  │    │ x4  │   │ x3  │   │ x4  │
+  └─────┘  └─────┘  └─────┘    └─────┘   └─────┘   └─────┘
+```
+
+---
+
+## 3. QUY TẮC PHÂN BỔ TÀI SẢN — CHỐNG CHỒNG CHÉO
+
+### 3.1 Nguyên tắc cốt lõi
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              QUẢN LÝ TÀI SẢN ĐA NỀN TẢNG                      │
+│                    5 QUY TẮC PHÂN BỔ                            │
 │                                                                 │
-│  ┌───────────────┐ ┌───────────────┐ ┌──────────┐ ┌─────────┐ │
-│  │ Tab 1         │ │ Tab 2         │ │ Tab 3    │ │ Tab 4   │ │
-│  │ BROWSER       │ │ TÀI KHOẢN    │ │ PAGES &  │ │ BUSINESS│ │
-│  │ PROFILES      │ │ QUẢNG CÁO    │ │ SHOPS    │ │ MANAGERS│ │
-│  │               │ │               │ │          │ │         │ │
-│  │ = VIA (SMIT)  │ │ FB + GG + TT  │ │ Shopee   │ │ BM      │ │
-│  │ = Identity    │ │ Ads accounts  │ │ Lazada   │ │ MCC     │ │
-│  │   trình duyệt │ │               │ │ TT Shop  │ │ BC      │ │
-│  └───────┬───────┘ └───────┬───────┘ └────┬─────┘ └────┬────┘ │
-│          │    Cross-filter  │              │            │       │
-│          └──────────────────┴──────────────┴────────────┘       │
+│  1️⃣  MỖI BROWSER PROFILE thuộc ĐÚNG 1 LUỒNG                  │
+│      → Profile Ngoại sàn KHÔNG được login shop e-com           │
+│      → Profile Nội sàn KHÔNG được login ads manager            │
+│                                                                 │
+│  2️⃣  MỖI NHÂN VIÊN thuộc ĐÚNG 1 LUỒNG tại 1 thời điểm       │
+│      → Media Buyer ≠ Shop Operator                             │
+│      → Chuyển luồng = chuyển dự án (có audit trail)            │
+│                                                                 │
+│  3️⃣  MỖI TKQC / SHOP chỉ gán cho 1 NV chính + 1 NV backup    │
+│      → Tránh 2 người cùng thao tác 1 tài khoản                │
+│                                                                 │
+│  4️⃣  TÀI SẢN FINANCE theo luồng riêng                         │
+│      → Card ngoại sàn: dùng cho FB/GG/TT Ads billing           │
+│      → Card nội sàn: dùng cho top-up shop, ads trong sàn       │
+│                                                                 │
+│  5️⃣  BÁO CÁO & DASHBOARD tách theo luồng                      │
+│      → GĐ Ngoại sàn chỉ thấy data ads                         │
+│      → GĐ Nội sàn chỉ thấy data e-com                         │
+│      → TGĐ thấy cả 2                                           │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
----
-
-## 2. NGUỒN KẾT NỐI THEO NỀN TẢNG
+### 3.2 Ma trận phân quyền tài sản
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    PHƯƠNG THỨC KẾT NỐI                      │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  FACEBOOK                                           │    │
-│  │  ├── Kết nối cơ bản: ixBrowser Extension (scrape)  │    │
-│  │  │   → Campaigns, spend, CPM, CTR, CPA             │    │
-│  │  └── Kết nối nâng cao: Extension (billing page)    │    │
-│  │      → Invoices, payments, threshold, billing       │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  GOOGLE ADS                                         │    │
-│  │  └── API chính thức: Google Ads API (OAuth 2.0)    │    │
-│  │      → Campaigns, spend, conversions, billing       │    │
-│  │      → MCC hierarchy, budget, change history        │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  TIKTOK ADS                                         │    │
-│  │  └── API chính thức: TikTok Marketing API (OAuth)  │    │
-│  │      → Campaigns, spend, conversions, billing       │    │
-│  │      → Business Center, Advertiser accounts         │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │  SHOPEE / LAZADA / TIKTOK SHOP                      │    │
-│  │  └── ixBrowser Extension (scrape seller center)    │    │
-│  │      → Shop info, products, orders, revenue         │    │
-│  └─────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
+                         NGOẠI SÀN                    NỘI SÀN
+                  ┌──────────────────────┐    ┌──────────────────────┐
+  Tài sản         │  FB    GG    TT Ads  │    │  Shopee Lazada TTShop│
+  ────────────────┼──────────────────────┼────┼──────────────────────┤
+  Browser Profile │  ✅    ✅    ✅      │    │  ✅    ✅     ✅    │
+  Ad Account      │  ✅    ✅    ✅      │    │  ❌    ❌     ❌    │
+  Shop Account    │  ❌    ❌    ❌      │    │  ✅    ✅     ✅    │
+  Fanpage         │  ✅    ❌    ❌      │    │  ❌    ❌     ❌    │
+  BM / MCC / BC   │  ✅    ✅    ✅      │    │  ❌    ❌     ❌    │
+  Payment Card    │  💳 Ads Cards        │    │  💳 E-com Cards      │
+  ────────────────┼──────────────────────┼────┼──────────────────────┤
+  NV Roles        │  Media Buyer         │    │  Shop Operator       │
+                  │  Campaign Mgr        │    │  Listing Specialist  │
+                  │  Creative Specialist │    │  E-com Marketer      │
+  ────────────────┼──────────────────────┼────┼──────────────────────┤
+  KPI Dashboard   │  CPA ROAS CTR CPM   │    │  GMV Orders Rev AOV  │
+  ────────────────┼──────────────────────┼────┼──────────────────────┤
+  Recon Engine    │  Ads Invoices ↔ Card │    │  Sàn Settlements ↔   │
+                  │  Transactions        │    │  Bank Transfers      │
+  └──────────────────────┘    └──────────────────────┘
 ```
 
 ---
 
-## 3. DATA FLOW — ĐỒNG BỘ TÀI SẢN
+## 4. LUỒNG PHÂN BỔ TÀI SẢN
+
+### 4.1 Onboard nhân viên mới
 
 ```
-  ixBrowser Profile (NV)          Google/TikTok API           xcapwallet.com
-  ┌───────────────────┐           ┌──────────────┐           ┌───────────────┐
-  │ Extension modules │           │ OAuth Token  │           │ Card + Txn    │
-  │                   │           │ Service      │           │ Sync Service  │
-  │ [FB Collector]    │           │              │           │               │
-  │ [Shopee Scraper]  │           │ [GG Ads API] │           │               │
-  │ [Lazada Scraper]  │           │ [TT Mkt API] │           │               │
-  │ [TT Shop Scraper] │           │              │           │               │
-  └─────────┬─────────┘           └──────┬───────┘           └───────┬───────┘
-            │                            │                           │
-            ▼                            ▼                           ▼
-  ┌─────────────────────────────────────────────────────────────────────────┐
-  │                        XCAP BACKEND (Node.js)                          │
-  │                                                                        │
-  │  ┌──────────────┐  ┌───────────────┐  ┌────────────────────────────┐  │
-  │  │ Asset Sync   │  │ API Gateway   │  │ Reconciliation Engine     │  │
-  │  │ Service      │  │ (GG + TT)     │  │ (Invoice ↔ Transaction)   │  │
-  │  │              │  │               │  │                            │  │
-  │  │ Upsert       │  │ Token refresh │  │ Auto-match                │  │
-  │  │ Dedup        │  │ Rate limiting │  │ Cross-platform            │  │
-  │  │ Health check │  │ Data normalize│  │                            │  │
-  │  └──────┬───────┘  └──────┬────────┘  └─────────────┬──────────────┘  │
-  │         │                 │                          │                  │
-  │         ▼                 ▼                          ▼                  │
-  │  ┌─────────────────────────────────────────────────────────────────┐   │
-  │  │                    MongoDB (Asset Collections)                   │   │
-  │  │                                                                  │   │
-  │  │  browser_profiles    ad_accounts      pages_shops               │   │
-  │  │  business_managers   asset_tags       asset_blacklist            │   │
-  │  │  sync_logs           health_alerts    api_tokens                 │   │
-  │  └─────────────────────────────────────────────────────────────────┘   │
-  └────────────────────────────────────────────────────────────────────────┘
+                   ┌──────────────┐
+                   │  NV mới      │
+                   │  được tuyển   │
+                   └──────┬───────┘
+                          │
+                   ┌──────▼───────┐
+                   │ HR gán vào   │
+                   │ Luồng nào?   │
+                   └──────┬───────┘
+                          │
+              ┌───────────┼───────────┐
+              │                       │
+     ┌────────▼────────┐     ┌────────▼────────┐
+     │  NGOẠI SÀN      │     │  NỘI SÀN        │
+     │                  │     │                  │
+     │ 1. Gán Role:     │     │ 1. Gán Role:     │
+     │    Media Buyer   │     │    Shop Operator  │
+     │                  │     │                  │
+     │ 2. Tạo Profile   │     │ 2. Tạo Profile   │
+     │    tag: ngoai_san│     │    tag: noi_san   │
+     │                  │     │                  │
+     │ 3. Gán TKQC:     │     │ 3. Gán Shop:      │
+     │    FB/GG/TT acc  │     │    Shopee/Lazada/  │
+     │                  │     │    TT Shop account │
+     │ 4. Cấp thẻ:      │     │                  │
+     │    Ads Card      │     │ 4. Cấp thẻ:       │
+     │                  │     │    E-com Card     │
+     │ 5. Dashboard:    │     │                  │
+     │    Ads KPIs      │     │ 5. Dashboard:     │
+     │                  │     │    E-com KPIs     │
+     └──────────────────┘     └──────────────────┘
 ```
 
----
+### 4.2 Giám sát & Phân quyền xem
 
-## 4. DATA SCHEMA
-
-### 4.1 Browser Profile (Tab 1)
-```javascript
-{
-  _id: ObjectId,
-  profileId: "PRF-001",           // ixBrowser ID
-  name: "Đạt_FB_Main",           // Tên gợi nhớ (editable)
-  employeeId: "XBK-001",         // Link → Employee
-  projectId: "DA-001",           // Link → Dự án
-  companyId: "XBK",              // Multi-company
-
-  // ixBrowser metadata
-  os: "Windows 11",
-  browser: "Chrome 124",
-  proxy: { ip: "103.152.xx.41", port: 8080, country: "VN" },
-  fingerprint: "FP-8a2f4d",
-  status: "running",             // running | idle | stopped
-
-  // Platforms detected
-  platforms: {
-    facebook: { connected: true, viaId: "100xxx", viaName: "Nguyễn Đạt" },
-    google:   { connected: true, email: "dat@xbk.com" },
-    tiktok:   { connected: false },
-    shopee:   { connected: true, shopId: "xxx" },
-    lazada:   { connected: false },
-    tiktokShop: { connected: false }
-  },
-
-  // Connection status
-  basicConnection: true,          // Extension cài & đang sync
-  advancedConnection: true,       // Extension đang pull billing
-
-  // Stats
-  adAccountCount: 3,
-  sessionTime: "3h 24m",
-  pagesVisited: 42,
-  lastActive: ISODate,
-
-  // Tags
-  personalTags: ["main", "biocare"],
-  orgTags: ["DA1", "team-lead"],
-
-  createdAt: ISODate,
-  syncedBy: "XBK-001"
-}
 ```
-
-### 4.2 Ad Account (Tab 2)
-```javascript
-{
-  _id: ObjectId,
-  platform: "facebook",          // facebook | google | tiktok
-  accountId: "act_1162586225600942",
-  name: "DA1_Biocare_Main",
-  status: "Active",              // Active | Disabled | Suspended | Unsettled
-
-  // Platform-specific
-  accountType: "business",       // personal | business (FB: BM, GG: MCC, TT: BC)
-  businessId: "BM-xxx",         // BM / MCC / BC ID
-  businessName: "XBK Media",
-
-  // Financial
-  totalSpend: 15420.50,
-  currency: "USD",
-  billingThreshold: 250,
-  dailyLimit: 500,
-  balance: 42.30,
-
-  // Metadata
-  timezone: "Asia/Ho_Chi_Minh",
-  createdAt: ISODate,
-
-  // XCAP links
-  profileId: "PRF-001",         // Link → Browser Profile
-  employeeId: "XBK-001",
-  projectId: "DA-001",
-  companyId: "XBK",
-
-  // Tags + management
-  personalTags: [],
-  orgTags: ["biocare", "DA1"],
-  basicConnection: true,
-  advancedConnection: true,
-  isBlacklisted: false,
-  deletedAt: null,               // Soft-delete (thùng rác 30 ngày)
-
-  // Sync
-  lastSyncAt: ISODate,
-  syncSource: "extension",       // extension | api
-  syncedBy: "XBK-001"
-}
-```
-
-### 4.3 Page / Shop (Tab 3)
-```javascript
-{
-  _id: ObjectId,
-  platform: "shopee",           // facebook | shopee | lazada | tiktokShop
-  type: "shop",                 // fanpage | shop
-  assetId: "shop_xxx",
-  name: "XBK Biocare Official",
-  url: "https://shopee.ph/xbkbiocare",
-
-  // Stats (platform-dependent)
-  followers: 12500,
-  products: 48,
-  rating: 4.8,
-  totalOrders: 3200,
-  revenue: 125000,
-
-  // XCAP links
-  profileId: "PRF-004",
-  employeeId: "XBK-003",
-  linkedAdAccounts: ["act_xxx"],
-  projectId: "DA-002",
-
-  orgTags: ["DA2", "fashion"],
-  lastSyncAt: ISODate
-}
-```
-
-### 4.4 Business Manager (Tab 4)
-```javascript
-{
-  _id: ObjectId,
-  platform: "facebook",        // facebook | google | tiktok
-  type: "BM",                  // BM | MCC | BC
-  managerId: "BM-12345",
-  name: "XBK Media Agency",
-  status: "Active",
-  adAccountCount: 12,
-  totalSpend: 45200.00,
-  currency: "USD",
-  linkedProfiles: ["PRF-001", "PRF-003"],
-  companyId: "XBK",
-  lastSyncAt: ISODate
-}
+┌────────────────────────────────────────────────────────────────┐
+│                    DATA VISIBILITY MATRIX                       │
+│                                                                │
+│  Vai trò              │ Ngoại sàn │ Nội sàn │ Finance │ All   │
+│  ──────────────────────┼───────────┼─────────┼─────────┼─────  │
+│  TGĐ (CEO)            │    ✅     │   ✅    │   ✅    │  ✅   │
+│  GĐ Ngoại sàn         │    ✅     │   ❌    │   🔵*   │  ❌   │
+│  GĐ Nội sàn           │    ❌     │   ✅    │   🔵*   │  ❌   │
+│  Team Lead (FB/GG/TT) │    🟡**   │   ❌    │   ❌    │  ❌   │
+│  Team Lead (Shopee/..) │    ❌     │   🟡**  │   ❌    │  ❌   │
+│  Media Buyer           │    🟢*** │   ❌    │   ❌    │  ❌   │
+│  Shop Operator         │    ❌     │   🟢*** │   ❌    │  ❌   │
+│  Kế toán               │    📊    │   📊    │   ✅    │  📊   │
+│                                                                │
+│  * 🔵 Chỉ thấy finance của luồng mình                         │
+│  ** 🟡 Chỉ thấy data team mình quản lý                        │
+│  *** 🟢 Chỉ thấy TKQC/Shop được gán cho mình                 │
+│  📊 Chỉ thấy số liệu tổng hợp, không thấy chi tiết campaign  │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 5. CÔNG CỤ QUẢN LÝ
+## 5. KIẾN TRÚC TABS — REDESIGN THEO 2 LUỒNG
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  QUẢN LÝ TÀI SẢN                                                │
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐    │
+│  │ SWITCH:  [ 🌐 Ngoại sàn ]  [ 🏪 Nội sàn ]  [ ALL* ]   │    │
+│  └──────────────────────────────────────────────────────────┘    │
+│  * ALL chỉ hiện cho TGĐ + Kế toán                               │
+│                                                                  │
+│  ═══════════════════════════════════════════════════════════════  │
+│  KHI CHỌN: 🌐 NGOẠI SÀN                                        │
+│  ═══════════════════════════════════════════════════════════════  │
+│                                                                  │
+│  Tab 1: Browser Profiles (tag: ngoai_san)                        │
+│  ┌──────────────────────────────────────────────────────────┐    │
+│  │ Profile | NV | Platforms [FB✅ GG✅ TT✅] | TKQC Count  │    │
+│  │ Status | Extension | Session | Proxy | Tags             │    │
+│  └──────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│  Tab 2: Tài khoản Quảng cáo                                     │
+│  ┌──────────────────────────────────────────────────────────┐    │
+│  │ Platform [FB|GG|TT] | TKQC ID | Tên | Status           │    │
+│  │ Spend | Limit | Threshold | BM/MCC/BC | NV | Project    │    │
+│  └──────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│  Tab 3: Fanpages                                                 │
+│  ┌──────────────────────────────────────────────────────────┐    │
+│  │ Page Name | Followers | Linked TKQC | NV quản lý        │    │
+│  └──────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│  Tab 4: Business Managers (BM / MCC / BC)                        │
+│  ┌──────────────────────────────────────────────────────────┐    │
+│  │ Platform | BM ID | Name | TKQC Count | Total Spend      │    │
+│  └──────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│  ═══════════════════════════════════════════════════════════════  │
+│  KHI CHỌN: 🏪 NỘI SÀN                                          │
+│  ═══════════════════════════════════════════════════════════════  │
+│                                                                  │
+│  Tab 1: Browser Profiles (tag: noi_san)                          │
+│  ┌──────────────────────────────────────────────────────────┐    │
+│  │ Profile | NV | Platforms [Shopee✅ Lazada✅ TTShop✅]    │    │
+│  │ Status | Extension | Session | Proxy | Tags             │    │
+│  └──────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│  Tab 2: Shops (Seller Accounts)                                  │
+│  ┌──────────────────────────────────────────────────────────┐    │
+│  │ Platform [Shopee|Lazada|TTShop] | Shop Name | Status    │    │
+│  │ Products | Orders | Revenue | Rating | NV | Project     │    │
+│  └──────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│  Tab 3: Products & Listings                                      │
+│  ┌──────────────────────────────────────────────────────────┐    │
+│  │ SKU | Product Name | Shop | Price | Stock | Views | ATC │    │
+│  └──────────────────────────────────────────────────────────┘    │
+│                                                                  │
+│  Tab 4: In-platform Ads                                          │
+│  ┌──────────────────────────────────────────────────────────┐    │
+│  │ Platform | Campaign | Budget | Spend | Orders | ROAS    │    │
+│  │ (Shopee Ads, Lazada Sponsored, TT Shop Ads)             │    │
+│  └──────────────────────────────────────────────────────────┘    │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 6. VALIDATION — HỆ THỐNG CHỐNG CHỒNG CHÉO
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                    THANH CÔNG CỤ BẢNG DỮ LIỆU               │
-│                                                              │
-│  [🔍 Bộ lọc] [🏷️ Gắn Tag] [💱 Quy đổi] [📥 Export]       │
-│  [📝 Chuẩn hóa tên] [⚙️ Tùy chỉnh cột]                   │
-│  [🗑️ Thùng rác] [⛔ Danh sách đen] [🏥 Health Check]      │
+│              ENFORCEMENT RULES (Backend)                      │
 │                                                              │
 │  ┌────────────────────────────────────────────────────────┐  │
-│  │ Chuẩn hóa tên (Batch rename)                          │  │
+│  │ Rule 1: PROFILE STREAM LOCK                           │  │
 │  │                                                        │  │
-│  │ Template: {Platform}_{Project}_{NV}_{Index}            │  │
-│  │ Preview:  FB_DA1_Đạt_001, FB_DA1_Đạt_002             │  │
-│  │           GG_DA2_Hùng_001                              │  │
+│  │ Khi tạo profile, bắt buộc chọn stream:                │  │
+│  │   stream: "ngoai_san" | "noi_san"                     │  │
+│  │                                                        │  │
+│  │ Extension tự validate:                                 │  │
+│  │   if (profile.stream === "ngoai_san") {               │  │
+│  │     ALLOW:  facebook.com/adsmanager                   │  │
+│  │     ALLOW:  ads.google.com                            │  │
+│  │     ALLOW:  ads.tiktok.com                            │  │
+│  │     BLOCK:  seller.shopee.* ← Cảnh báo!              │  │
+│  │     BLOCK:  sellercenter.lazada.* ← Cảnh báo!        │  │
+│  │   }                                                    │  │
+│  │   if (profile.stream === "noi_san") {                 │  │
+│  │     ALLOW:  seller.shopee.*                           │  │
+│  │     ALLOW:  sellercenter.lazada.*                     │  │
+│  │     ALLOW:  seller.tiktokshop.*                       │  │
+│  │     BLOCK:  facebook.com/adsmanager ← Cảnh báo!      │  │
+│  │     BLOCK:  ads.google.com ← Cảnh báo!               │  │
+│  │   }                                                    │  │
 │  └────────────────────────────────────────────────────────┘  │
 │                                                              │
 │  ┌────────────────────────────────────────────────────────┐  │
-│  │ Health Check — Tự động cảnh báo                       │  │
+│  │ Rule 2: EMPLOYEE STREAM ASSIGNMENT                    │  │
 │  │                                                        │  │
-│  │ 🔴 TKQC bị Disabled      → Notify NV + Team Lead     │  │
-│  │ 🟡 TKQC Unsettled        → Notify Kế toán            │  │
-│  │ 🟡 Billing gần ngưỡng    → Notify NV                 │  │
-│  │ 🔴 Profile disconnected  → Notify Admin              │  │
-│  │ 🟡 Extension offline >1h → Notify NV                 │  │
+│  │ employee.stream = "ngoai_san" | "noi_san"             │  │
+│  │ employee.roles = ["media_buyer"] | ["shop_operator"]  │  │
+│  │                                                        │  │
+│  │ Constraint:                                            │  │
+│  │   NV ngoai_san KHÔNG được gán shop account            │  │
+│  │   NV noi_san KHÔNG được gán ad account                │  │
+│  │   Chuyển luồng → phải qua HR approval + audit log    │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │ Rule 3: ASSET OWNERSHIP                               │  │
+│  │                                                        │  │
+│  │ Mỗi TKQC / Shop có:                                   │  │
+│  │   owner: "XBK-001"        (NV chính — 1 duy nhất)    │  │
+│  │   backup: "XBK-002"       (NV backup — 1 duy nhất)   │  │
+│  │   supervisor: "XBK-007"   (Team Lead — giám sát)     │  │
+│  │                                                        │  │
+│  │ Khi gán owner:                                         │  │
+│  │   CHECK owner.stream === asset.stream                 │  │
+│  │   CHECK asset chưa có owner khác (trừ khi transfer)   │  │
+│  └────────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │ Rule 4: CARD ISOLATION                                │  │
+│  │                                                        │  │
+│  │ card.stream = "ngoai_san" | "noi_san"                 │  │
+│  │                                                        │  │
+│  │ Ads Card → chỉ dùng cho FB/GG/TT Ads billing         │  │
+│  │ E-com Card → chỉ dùng cho top-up shop + sàn ads      │  │
+│  │                                                        │  │
+│  │ Recon Engine validate:                                 │  │
+│  │   Txn từ "FACEBK" trên E-com Card → FLAG ❌           │  │
+│  │   Txn từ "SHOPEE" trên Ads Card → FLAG ❌             │  │
 │  └────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 6. API INTEGRATION — GOOGLE & TIKTOK
+## 7. DASHBOARD THEO LUỒNG
 
-### Google Ads API Flow
 ```
-NV đăng ký OAuth → XCAP Backend lưu refresh_token
-                          │
-                   ┌──────▼──────┐
-                   │ Cron 30min  │
-                   │             │
-                   │ 1. Refresh access_token
-                   │ 2. GET /customers/{id}/campaigns
-                   │ 3. GET /customers/{id}/billing
-                   │ 4. Normalize → MongoDB
-                   └─────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  🌐 DASHBOARD NGOẠI SÀN                                    │
+│                                                             │
+│  KPIs: [Total Spend] [CPA] [Conversions] [Impressions]     │
+│                                                             │
+│  Charts:                                                    │
+│  ├── Daily Spend by Platform (FB / GG / TT)                │
+│  ├── CPA Trend                                              │
+│  └── Top Campaigns by ROAS                                  │
+│                                                             │
+│  Tables:                                                    │
+│  ├── Campaigns (cross-platform)                             │
+│  ├── TKQC Health (Active / Disabled / Unsettled)           │
+│  └── Top Marketers by Spend                                 │
+└─────────────────────────────────────────────────────────────┘
 
-Scopes cần thiết:
-- adwords (campaigns, ad groups, ads, metrics)
-- billing (invoices, payments, budgets)
-```
-
-### TikTok Marketing API Flow
-```
-NV đăng ký OAuth → XCAP Backend lưu access_token
-                          │
-                   ┌──────▼──────┐
-                   │ Cron 30min  │
-                   │             │
-                   │ 1. GET /advertiser/info
-                   │ 2. GET /campaign/get
-                   │ 3. GET /report/integrated/get
-                   │ 4. Normalize → MongoDB
-                   └─────────────┘
-
-Scopes cần thiết:
-- advertiser_management
-- campaign_management  
-- report_read
+┌─────────────────────────────────────────────────────────────┐
+│  🏪 DASHBOARD NỘI SÀN                                      │
+│                                                             │
+│  KPIs: [GMV] [Orders] [Conv Rate] [AOV] [Revenue]          │
+│                                                             │
+│  Charts:                                                    │
+│  ├── Daily GMV by Platform (Shopee / Lazada / TT Shop)     │
+│  ├── Order Trend                                            │
+│  └── Top Products by Revenue                                │
+│                                                             │
+│  Tables:                                                    │
+│  ├── Shop Performance                                       │
+│  ├── Product Rankings                                       │
+│  └── Top Operators by GMV                                   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 7. SO SÁNH SMIT vs XCAP (FINAL)
+## 8. TÓM TẮT SO SÁNH
 
-| Tính năng | SMIT | XCAP |
+| Khía cạnh | Ngoại sàn 🌐 | Nội sàn 🏪 |
 |---|---|---|
-| Nền tảng | Facebook only | FB + GG (API) + TT (API) + 3 e-com (Extension) |
-| Đơn vị quản lý | VIA (FB account) | ixBrowser Profile (multi-platform identity) |
-| Kết nối cơ bản | Facebook OAuth | Extension (FB) + API OAuth (GG, TT) |
-| Kết nối nâng cao | SMIT Connect Extension | ixBrowser Extension (billing scrape) |
-| Tab 1 | VIA | Browser Profiles |
-| Tab 2 | TKQC (FB only) | TKQC đa nền tảng (FB + GG + TT) |
-| Tab 3 | Fanpage | Pages & Shops (FB + Shopee + Lazada + TT Shop) |
-| Tab 4 | ❌ | Business Managers (BM + MCC + BC) |
-| Tag | ✅ Cá nhân + DN | ✅ Cá nhân + DN + Auto-tag by project |
-| Health Check | ❌ | ✅ Tự động cảnh báo TK lỗi |
-| Finance link | Hóa đơn + Thẻ | + xcapwallet.com + Recon Engine |
-| Scale | ~100 TKQC | 10K-15K profiles, ~30K TKQC |
+| **Kênh** | Facebook, Google, TikTok Ads | Shopee, Lazada, TikTok Shop |
+| **Kết nối** | FB: Extension, GG+TT: API | Extension scrape Seller Center |
+| **Tài sản chính** | TKQC + Fanpage + BM/MCC/BC | Shop + Products + In-platform Ads |
+| **Nhân sự** | Media Buyer, Campaign Mgr | Shop Operator, Listing Spec |
+| **Cards** | Ads Cards (FB/GG/TT billing) | E-com Cards (shop top-up) |
+| **KPIs** | CPA, ROAS, CTR, CPM | GMV, Orders, Conv Rate, AOV |
+| **Recon** | Ads Invoice ↔ Card Txn | Sàn Settlement ↔ Bank Transfer |
+| **Dashboard** | Ads Performance | E-commerce Performance |
