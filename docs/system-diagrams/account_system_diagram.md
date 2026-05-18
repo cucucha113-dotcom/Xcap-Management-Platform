@@ -74,7 +74,7 @@ erDiagram
         ObjectId department
         string role "super_admin...viewer"
         string position "Tổng GĐ / GĐ Dự án / Leader / NV"
-        string stream "ngoai_san / noi_san"
+        array stream "['ngoai_san'] or ['noi_san'] or ['ngoai_san','noi_san']"
         array platforms "facebook / google / tiktok_ads / shopee / lazada / tiktok_shop"
         ObjectId reportsTo
         string status "active / suspended / offboarded"
@@ -477,10 +477,11 @@ graph TB
 |---|---|
 | **Company Isolation** | TGĐ XBK **KHÔNG** thấy data T.1/Phoenix/MTG |
 | **Stream Isolation** | GĐ Ngoại sàn **KHÔNG** thấy data Nội sàn, ngược lại |
+| **Cross-stream GĐ** | GĐ Dự án quản DA cả 2 luồng → thấy data **cả 2**, nhưng chỉ trong DA mình |
 | **Project Isolation** | GĐ DA Brand A **KHÔNG** thấy NV DA Brand B |
 | **Team Isolation** | Leader 1 **KHÔNG** thấy NV của Leader 2 |
 | **Platform Cross** | NV stream ngoai_san chạy nhiều platform (FB+GG+TT) OK |
-| **Stream Lock** | NV ngoai_san **KHÔNG** được gán shop account |
+| **Stream Lock (NV)** | NV ngoai_san **KHÔNG** được gán shop account |
 | **Cross-reference** | super_admin + TGĐ thấy **CẢ 2 LUỒNG** |
 
 ---

@@ -48,43 +48,59 @@
 
 ## 2. SƠ ĐỒ TỔ CHỨC — PHÂN CHUYÊN MÔN
 
-> **Quan trọng:** NV thuộc 1 luồng nhưng có thể triển khai **nhiều nền tảng**
-> trong luồng đó. VD: 1 Media Buyer chạy cả FB + GG + TT Ads.
+> **Quan trọng:**
+> - NV (marketer/operator) thuộc 1 luồng, có thể chạy **nhiều nền tảng** trong luồng đó.
+> - **GĐ Dự án có thể phụ trách DỰ ÁN CẢ 2 LUỒNG** (Ngoại sàn + Nội sàn).
 
 ```
-                        ┌──────────────┐
-                        │  Tổng GĐ     │
-                        │  (Company)   │
-                        └──────┬───────┘
-                               │
-               ┌───────────────┼───────────────┐
-               │                               │
-      ┌────────▼────────┐            ┌─────────▼────────┐
-      │  GĐ NGOẠI SÀN  │            │  GĐ NỘI SÀN     │
-      │  (Dept Head)    │            │  (Dept Head)     │
-      └────────┬────────┘            └─────────┬────────┘
-               │                               │
-     ┌─────────┼──────────┐         ┌──────────┼──────────┐
-     │         │          │         │          │          │
-  ┌──▼───┐  ┌──▼───┐  ┌──▼───┐  ┌──▼───┐  ┌──▼───┐  ┌──▼───┐
-  │DA 1  │  │DA 2  │  │DA 3  │  │DA 4  │  │DA 5  │  │DA 6  │
-  │Brand │  │Brand │  │Brand │  │Brand │  │Brand │  │Brand │
-  │  A   │  │  B   │  │  C   │  │  D   │  │  E   │  │  F   │
-  └──┬───┘  └──┬───┘  └──┬───┘  └──┬───┘  └──┬───┘  └──┬───┘
-     │         │         │         │         │         │
-  ┌──▼────────────────────┐     ┌──▼────────────────────┐
-  │  Media Buyer x11      │     │  Shop Operator x11    │
-  │                       │     │                       │
-  │  Mỗi NV có thể chạy: │     │  Mỗi NV có thể chạy: │
-  │  ├── FB Ads ✅        │     │  ├── Shopee ✅        │
-  │  ├── GG Ads ✅        │     │  ├── Lazada ✅        │
-  │  └── TT Ads ✅        │     │  └── TT Shop ✅       │
-  │                       │     │                       │
-  │  Gán theo DỰ ÁN,     │     │  Gán theo DỰ ÁN,     │
-  │  không gán theo       │     │  không gán theo       │
-  │  nền tảng             │     │  nền tảng             │
-  └───────────────────────┘     └───────────────────────┘
+                            ┌──────────────┐
+                            │  Tổng GĐ     │
+                            │  (Company)   │
+                            └──────┬───────┘
+                                   │
+                 ┌─────────────────┼─────────────────┐
+                 │                                   │
+        ┌────────▼────────┐               ┌──────────▼────────┐
+        │  GĐ NGOẠI SÀN  │               │  GĐ NỘI SÀN      │
+        │  (Dept Head)    │               │  (Dept Head)      │
+        └────────┬────────┘               └──────────┬────────┘
+                 │                                   │
+    ┌────────────┼────────────┐          ┌────────────┼────────────┐
+    │            │            │          │            │            │
+ ┌──▼───┐    ┌──▼───┐    ┌──▼───┐   ┌──▼───┐    ┌──▼───┐    ┌──▼───┐
+ │DA 1  │    │DA 2  │    │DA 3  │   │DA 4  │    │DA 5  │    │DA 6  │
+ │Brand │    │Brand │    │Brand │   │Brand │    │Brand │    │Brand │
+ │  A   │    │  B   │    │  C   │   │  D   │    │  E   │    │  F   │
+ └──┬───┘    └──┬───┘    └──┬───┘   └──┬───┘    └──┬───┘    └──┬───┘
+    │           │            │         │            │            │
+    └─────┬─────┘            │         └──────┬─────┘            │
+          │                  │                │                  │
+          ▼                  ▼                ▼                  ▼
+  Media Buyer x11     ┌───────────┐   Shop Operator x8    Shop Operator x3
+  (stream: ngoai_san) │GĐ DA 3   │   (stream: noi_san)   (stream: noi_san)
+  FB ✅ GG ✅ TT ✅  │ CROSS-    │   Shopee ✅ Lazada ✅  TT Shop ✅
+                      │ STREAM    │
+                      │           │
+                      │ Quản cả:  │
+                      │ 🌐 FB Ads │
+                      │ 🏪 Shopee │
+                      │           │
+                      │ NV dưới   │
+                      │ quyền vẫn │
+                      │ lock 1    │
+                      │ stream    │
+                      └───────────┘
 ```
+
+### Phân cấp quyền stream
+
+| Cấp bậc | Stream Policy | Ví dụ |
+|---|---|---|
+| **TGĐ** | Xem + quản lý **cả 2 luồng** | TGĐ XBK thấy all |
+| **GĐ Dept** | Chỉ luồng mình phụ trách | GĐ Ngoại sàn chỉ thấy Ads |
+| **GĐ Dự án** | **Có thể cross-stream** nếu quản DA cả 2 luồng | GĐ DA Brand C quản cả FB Ads + Shopee |
+| **Team Lead** | Lock 1 stream | Leader FB team |
+| **NV (Marketer/Operator)** | **Lock 1 stream**, cross-platform OK | Media Buyer chạy FB+GG+TT |
 
 ---
 
@@ -94,17 +110,21 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    5 QUY TẮC PHÂN BỔ                            │
+│                    6 QUY TẮC PHÂN BỔ                            │
 │                                                                 │
 │  1️⃣  MỖI BROWSER PROFILE thuộc ĐÚNG 1 LUỒNG                  │
 │      → Profile Ngoại sàn KHÔNG được login shop e-com           │
 │      → Profile Nội sàn KHÔNG được login ads manager            │
 │                                                                 │
-│  2️⃣  MỖI NHÂN VIÊN thuộc ĐÚNG 1 LUỒNG tại 1 thời điểm       │
-│      → Nhưng có thể chạy NHIỀU NỀN TẢNG trong luồng đó       │
+│  2️⃣  NV (marketer/operator) lock 1 LUỒNG, cross-platform OK  │
 │      → VD: Media Buyer chạy cả FB + GG + TT Ads               │
 │      → VD: Shop Operator quản cả Shopee + Lazada              │
 │      → Chuyển luồng = chuyển dự án (có audit trail)            │
+│                                                                 │
+│  2b. GĐ DỰ ÁN có thể phụ trách DỰ ÁN CẢ 2 LUỒNG            │
+│      → stream = ["ngoai_san", "noi_san"] (array, not string)  │
+│      → Thấy dashboard cả 2 luồng cho DA mình quản             │
+│      → NV dưới quyền GĐ vẫn lock 1 stream                     │
 │                                                                 │
 │  3️⃣  MỖI TKQC / SHOP chỉ gán cho 1 NV chính + 1 NV backup    │
 │      → Tránh 2 người cùng thao tác 1 tài khoản                │
