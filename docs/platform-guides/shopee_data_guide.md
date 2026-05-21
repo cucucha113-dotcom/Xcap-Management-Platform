@@ -57,6 +57,74 @@ Shopee Seller Center (seller.shopee.vn)
 
 ---
 
+## 📸 Visual Data Map — Vị trí dữ liệu trên Seller Center
+
+> Dev cần biết chính xác từng field nằm ở đâu trên giao diện Shopee. Dưới đây là screenshots annotated từ account thật.
+
+### Dashboard — 13 Data Points
+
+![Shopee Dashboard — vị trí 13 fields cần lấy](assets/shopee_dashboard_ann.png)
+
+| Ô | Field | Giá trị mẫu | Ghi chú |
+|---|---|---|---|
+| **①** | `to_process_shipment` | 2 | Đơn cần xử lý giao |
+| **②** | `processed_shipment` | 3 | Đơn đã xử lý |
+| **③** | `return_refund_cancel` | 72 | Đơn hoàn/hủy |
+| **④** | `banned_products` | 6 | SP bị cấm/giảm boost |
+| **⑤** | `join_cheap` | 8 | SP cần tham gia "Rẻ nhất Shopee" |
+| **⑥** | `sales` | ₱1,556 (▲ 478%) | **Doanh số — KPI #1** |
+| **⑦** | `visitors` | 20 (▼ 4.76%) | Lượt truy cập shop |
+| **⑧** | `product_clicks` | 16 (▼ 30.43%) | Click vào sản phẩm |
+| **⑨** | `orders` | 4 (▲ 300%) | Số đơn hàng |
+| **⑩** | `conversion_rate` | 25.00% (▲ 20.65%) | Tỷ lệ chuyển đổi |
+| **⑪** | `ads_credit` + `ads_sales` + `roas` | ₱130.76 / ₱937 / 8.37 | Shopee Ads card |
+| **⑫** | `affiliate_sales` + `affiliate_roi` | ₱3.2K / 24.2 | Affiliate card |
+| **⑬** | `shop_score` | 93 (Good) | Điểm hiệu suất shop |
+
+### My Products — 11 Data Points
+
+![Shopee Products — vị trí 11 fields cần lấy](assets/shopee_products_ann.png)
+
+| Ô | Field | Giá trị mẫu | Ghi chú |
+|---|---|---|---|
+| **①** | `status_tabs` | All / Live (8) / Violation (6) | Lọc theo trạng thái |
+| **②** | `total_products` | 8 | Tổng SP |
+| **④** | `product_name` | "Red Shark milk joint relief cream..." | Tên + thumbnail |
+| **⑤** | `price_range` | ₱1,500 - ₱5,500 | Range giá (nhiều SKU) |
+| **⑥** | `stock` | 4k / 991 | Tồn kho |
+| **⑦** | `performance` | "Sales..." | Doanh số SP (L30D) |
+| **⑧** | `item_id` + `parent_sku` | "Item ID: 28736132581" | ID sản phẩm + SKU |
+| **⑨** | `affiliate_badge` | "AMS Commission >" | SP đã bật Affiliate |
+| **⑩** | `actions` | Edit / Boost / More | Nút thao tác |
+
+### Marketing — Shopee Ads & Affiliate — 10 Data Points
+
+![Shopee Marketing — vị trí 10 fields cần lấy](assets/shopee_marketing_ann.png)
+
+| Ô | Field | Giá trị mẫu | Ghi chú |
+|---|---|---|---|
+| **②** | `ads_credit` | ₱176.22 | Số dư credit QC |
+| **③** | `ads_sales` | ₱318.00 (▼ 44.98%) | Doanh số từ Ads |
+| **④** | `roas` | 4.78 (▼ 10.90%) | Return on Ad Spend |
+| **⑥** | `affiliate_sales` | ₱3.2K | Doanh số qua affiliate |
+| **⑦** | `new_buyers` | 7 | Khách mới từ affiliate |
+| **⑧** | `affiliate_roi` | 24.2 | ROI affiliate |
+| **⑨** | `competitiveness` | +54% ↗ | Độ cạnh tranh |
+
+### 🔗 URL Patterns cho Extension
+
+```
+Dashboard:     seller.shopee.{market}/
+Orders:        seller.shopee.{market}/portal/sale/order
+My Products:   seller.shopee.{market}/portal/product/list/all
+Shopee Ads:    seller.shopee.{market}/portal/marketing/pas/index
+Affiliate:     seller.shopee.{market}/portal/marketing/affiliate
+My Income:     seller.shopee.{market}/portal/finance/income
+Business Data: seller.shopee.{market}/portal/data/business
+```
+
+---
+
 ## 📋 3. API Endpoints & Data Mapping
 
 ### 3.1 Shop Data

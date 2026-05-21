@@ -62,6 +62,79 @@ Lazada Seller Center (sellercenter.lazada.vn)
 
 ---
 
+## 📸 Visual Data Map — Vị trí dữ liệu trên Seller Center
+
+> Dev cần biết chính xác từng field nằm ở đâu trên giao diện Lazada. Dưới đây là screenshots annotated từ account thật.
+
+### Dashboard — 10 Data Points
+
+![Lazada Dashboard — vị trí 10 fields cần lấy](assets/lazada_dashboard_ann.png)
+
+| Ô | Field | Giá trị mẫu | Ghi chú |
+|---|---|---|---|
+| **①** | `task_list` (5 items) | unpaid: 0, pending pack: 0, pending ship: 0, cancel: 0, return: 0 | To-do hàng trên cùng |
+| **②** | `waiting_pickup` + `pickup_exceptions` | 14 / 14 | Logistics alerts |
+| **③** | `out_of_stock` + `qc_issues` + `to_be_reviewed` | 2 / 1 / 104 | Product alerts |
+| **④** | `ongoing_penalties` + `orders_breach_fee` | 3 / 2 | Violation tracking |
+| **⑤** | `revenue` + `orders` + `visitors` | ₱1,533 (+126%) / 2 / 1 | **Business Advisor KPIs** |
+| **⑥** | `fast_fulfilment_rate` (FFR) | 79.78% | Seller growth metric |
+| **⑦** | `chat_response_rate` | 90% | Customer service metric |
+| **⑧** | `lazflash_invitation` | ₱209.29, Traffic 2X-5X | Flash sale invitations |
+| **⑩** | `sidebar_menu` | 9 sections | Full navigation |
+
+### Order Management — 8 Data Points
+
+![Lazada Orders — vị trí 8 fields cần lấy](assets/lazada_orders_ann.png)
+
+| Ô | Field | Giá trị mẫu | Ghi chú |
+|---|---|---|---|
+| Status Tabs | All / Unpaid / **To Ship** (🔴14) / Shipping (🔴1) / Delivered / Failed / Refund | Badge counts | Order status filters |
+| Performance | `cancellation_rate` / `pnr` / `ffr` / `ffr_plus` | 0% / 0% / 79.78% / 79.78% | Top bar KPIs |
+| Table | `product_info` / `total_amount` / `delivery_info` / `order_status` / `actions` | — | Order details |
+
+### Manage Products — 10 Data Points
+
+![Lazada Products — vị trí 10 fields cần lấy](assets/lazada_products_ann.png)
+
+| Ô | Field | Giá trị mẫu | Ghi chú |
+|---|---|---|---|
+| **①** | `product_limitation` | 6 / 5,000 | Số SP / Giới hạn |
+| **②** | Status tabs | Active (🔵6) / Inactive (🔴1) / Violation (🔴1) | Filter by status |
+| **③** | `product_name` | "Nano Silver FDA APPROVED..." | Tên + thumbnail |
+| **④** | `price` | ₱299 - 1,969 | Range giá (nhiều SKU) |
+| **⑤** | `stock` | 39,743 | Tồn kho |
+| **⑥** | `active_toggle` | 🔵 ON / ⚫ OFF | Bật/tắt SP |
+| **⑦** | `product_id` | 5377977702 | Lazada Product ID |
+| **⑧** | `product_metrics` | 👍100 👁100 🛒1,999 ⭐4.6 | Likes/Views/Sold/Rating |
+
+### Marketing & Sponsored Solutions — 8 Data Points
+
+![Lazada Marketing — vị trí 8 fields cần lấy](assets/lazada_marketing_ann.png)
+
+| Ô | Field | Giá trị mẫu | Ghi chú |
+|---|---|---|---|
+| **①** | `promotion_tabs` | Promotions / Smart Promotion (New) | 2 tab chính |
+| **②** | `smart_suggestion` | GASTRO-P ₱230, Min.Spend ₱2,200 | Auto voucher suggestion |
+| **③** | `marketing_tools` | Flexi Combo, Free Shipping, Add-On Deals | Tools list |
+| **④** | `voucher_types` | Regular / New Buyer / Follower Voucher | Voucher categories |
+| **⑦** | **Sponsored Solutions** 🔴 | Quảng cáo trả phí Lazada | In-platform ads |
+| **⑧** | Data Insight → Business Advisor | Traffic + Revenue analytics | Cần scrape |
+
+### 🔗 URL Patterns cho Extension
+
+```
+Dashboard:    sellercenter.lazada.{market}/
+Orders:       sellercenter.lazada.{market}/apps/order/index
+Products:     sellercenter.lazada.{market}/apps/product/manage
+Promotions:   sellercenter.lazada.{market}/apps/marketing/promotions
+Sponsored:    sellercenter.lazada.{market}/apps/sponsored/campaign
+My Income:    sellercenter.lazada.{market}/apps/finance/income
+My Balance:   sellercenter.lazada.{market}/apps/finance/balance
+Data Insight: sellercenter.lazada.{market}/apps/data/business-advisor
+```
+
+---
+
 ## 📋 3. API Endpoints & Data Mapping
 
 ### 3.1 Seller / Shop Data

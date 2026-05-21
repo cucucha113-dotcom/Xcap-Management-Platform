@@ -68,6 +68,105 @@ TikTok Shop Seller Center (seller-vn.tiktok.com)
 
 ---
 
+## 📸 Visual Data Map — Vị trí dữ liệu trên Seller Center
+
+> Dev cần biết chính xác từng field nằm ở đâu trên giao diện TikTok Shop. Dưới đây là screenshots annotated từ account thật.
+
+### Homepage Dashboard — 10 Data Points
+
+![TikTok Shop Homepage — vị trí 10 fields cần lấy](assets/tts_homepage_ann.png)
+
+| Ô | Field | Giá trị mẫu | Ghi chú |
+|---|---|---|---|
+| **①** | `to_ship` + `urgent` | 2 (3 Urgent) | Đơn cần giao gấp |
+| **②** | `rejected_products` | 3 | SP bị TikTok từ chối |
+| **③** | `unreplied_reviews` | 11 | Review tiêu cực chưa phản hồi |
+| **④** | `gmv` | ₱907 | **KPI CHÍNH — Tổng GMV** |
+| **⑤** | `live_gmv` | ₱0 | GMV từ livestream |
+| **⑥** | `video_gmv` | ₱0 | GMV từ short video |
+| **⑦** | `creator_gmv` | ₱0 | GMV từ affiliate/creator |
+| **⑧** | `date_filter` | Last 7 days | Bộ lọc thời gian |
+| **⑨** | `risk_level` + `violations` | "Low Risk", 13 records | Mức rủi ro shop |
+| **⑩** | `daily_order_limit` | 0/100 | Giới hạn đơn/ngày |
+
+### Products — 11 Data Points
+
+![TikTok Shop Products — vị trí 11 fields cần lấy](assets/tts_products_ann.png)
+
+| Ô | Field | Giá trị mẫu | Ghi chú |
+|---|---|---|---|
+| **①** | `product_name` | "[COD]Bee Venom Plus Original..." | Tên đầy đủ SP + thumbnail |
+| **②** | `product_id` | ID:17334359223... | ID duy nhất |
+| **③** | `items_sold` | "1 item sold" | Tổng đã bán |
+| **④** | `status` | "● Live" | Live / Draft / Reviewing |
+| **⑤** | `views` | 2,987 | Lượt xem SP |
+| **⑥** | `created_date` | "02/12/2025 15:01" | Ngày tạo SP |
+| **⑦** | `retail_price` | "₱369.00 - ₱1,129.00" | Range giá (nhiều SKU) |
+| **⑧** | `sales_amount` | "Sales: ₱369.00" | Tổng doanh số |
+| **⑨** | `sku_views` | "Views: 372" | Views per SKU |
+| **⑩** | `sku_count` | "3 SKUs" | Số biến thể |
+| **⑪** | `status_filter_tabs` | All / Active 5 | Lọc theo trạng thái |
+
+### Analytics — 10 Data Points
+
+![TikTok Shop Analytics — vị trí 10 fields cần lấy](assets/tts_analytics_ann.png)
+
+| Ô | Field | Giá trị mẫu | Ghi chú |
+|---|---|---|---|
+| **①** | `analytics_tabs` | 7 tabs (Shop/Growth/Content/Card/Product/Marketing/Post-purchase) | Tab navigation |
+| **②** | `date_range` | "May 10, 2026 - May 10, 2026" | Date picker + Compare |
+| **③** | `gmv` | ₱0.00 | **KPI** — tick checkbox hiện chart |
+| **④** | `items_sold` | 0 | Tổng SP đã bán |
+| **⑤** | `sku_orders` | 0 | Đơn theo SKU |
+| **⑥** | `orders` | 0 | Tổng đơn hàng |
+| **⑦** | `trend_chart` | Line chart (00:00→21:00) | So sánh Yesterday |
+| **⑧** | `gmv_breakdown` | By content type / By order source | Phân tích nguồn GMV |
+| **⑨** | `content_attribution` | LIVEs 0.0% / Videos 0.0% | Tỉ lệ đóng góp content |
+| **⑩** | `category_ranking` | Top GMV shops | Xếp hạng trong ngành |
+
+### Finance — 8 Data Points
+
+![TikTok Shop Finance — vị trí 8 fields cần lấy](assets/tts_finance_ann.png)
+
+| Ô | Field | Giá trị mẫu | Ghi chú |
+|---|---|---|---|
+| **①** | `finance_tabs` | 6 tabs (Financial summary / Payouts / Statements / On hold / Invoices / Tax) | Tab navigation |
+| **②** | `paid_amount` | -- | Đã thanh toán tuần này |
+| **③** | `processing_amount` | -- | Đang xử lý (1-3 ngày) |
+| **④** | `on_hold_amount` | -- | Tiền bị giữ |
+| **⑤** | `date_filter` | 01/04/2026 - 30/04/2026 | Bộ lọc thời gian |
+| **⑥** | `payout_history` | "Recent payouts will appear here" | Lịch sử thanh toán |
+| **⑦** | `payment_provider` + `account` | "LianLian Global ID", "****0860" | Nhà cung cấp + số TK |
+
+### Ads Dashboard — 11 Data Points
+
+![TikTok Shop Ads — vị trí 11 fields cần lấy](assets/tts_ads_ann.png)
+
+| Ô | Field | Giá trị mẫu | Ghi chú |
+|---|---|---|---|
+| **②** | `ad_campaign_name` + `tag` | "33 JM - 0212 MR DUNG", "Primary" | Tên chiến dịch |
+| **③** | `product_name` | "Green shirt" | SP đang chạy ads |
+| **④** | `sku_id` | "SKU ID: 123456789" | ID biến thể |
+| **⑤** | `optimization_mode` | "Target ROI" / "Max delivery" | 2 chế độ tối ưu |
+| **⑥** | `gross_revenue` | 500.00 | Doanh thu gộp |
+| **⑦** | `ad_cost` | 0 VND | **KPI — Chi phí QC** |
+| **⑧** | `ad_roi` | 0.00 | **KPI — ROI quảng cáo** |
+| **⑨** | `date_range` | "2026-05-04 - 2026-05-11" | Khoảng thời gian |
+| **⑩** | `create_ads_action` | "Create GMV Max ads" | Tạo QC mới |
+
+### 🔗 URL Patterns cho Extension
+
+```
+Homepage:     seller-vn.tiktok.com/ (hoặc seller.tiktokshopglobalselling.com)
+Products:     seller-vn.tiktok.com/product/manage
+Orders:       seller-vn.tiktok.com/order/list
+Analytics:    seller-vn.tiktok.com/analytics/overview
+Finance:      seller-vn.tiktok.com/finance/overview
+Ads:          seller-vn.tiktok.com/ads/dashboard
+```
+
+---
+
 ## 📋 3. API Endpoints & Data Mapping
 
 ### 3.1 Shop Data
