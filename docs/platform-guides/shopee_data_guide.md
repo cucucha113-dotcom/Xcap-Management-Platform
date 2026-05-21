@@ -1,183 +1,449 @@
-# 📋 Shopee Seller Centre — Annotated Data Map
+# 🏪 Shopee — Hướng dẫn Lấy Dữ liệu cho XCAP NỘI SÀN
 
-> **Shop:** jointreliefcream
-> **Market:** Philippines (seller.shopee.ph)
-> **Ngày chụp:** 11/05/2026 — Screenshots thật
-> **Tổng:** 8 sản phẩm, 4 đơn mới
+> **Mục tiêu:** Dev biết chính xác cần lấy gì từ Shopee, ở đâu, API endpoint nào, fields nào map vào entity nào trong XCAP Nội sàn system.
+> **Stream:** `noi_san` — On-Platform E-commerce
+> **API Docs:** https://open.shopee.com/documents/v2/v2.introduction
+> **Auth:** OAuth 2.0
 
 ---
 
-## 📌 SIDEBAR NAVIGATION (Menu trái)
+## 🏗️ 1. Kiến trúc Tổng quan
 
-| Section | Menu items | URL Pattern |
+```
+Shopee Seller Center (seller.shopee.vn)
+├── Dashboard (Home)
+│   ├── To-do List (pending orders, returns)
+│   ├── Business Insights (revenue, orders, visitors, conversion)
+│   ├── Shopee Ads Card (credit, sales, ROAS)
+│   └── Affiliate Card (sales, ROI)
+├── Orders
+│   ├── My Orders (all statuses)
+│   ├── Return/Refund/Cancel
+│   ├── Mass Ship
+│   └── Shipping Settings
+├── Products
+│   ├── My Products (listing management)
+│   ├── Add New Product
+│   └── AI Optimiser
+├── Marketing Centre
+│   ├── Shopee Ads (Keyword, Discovery, Shop Ads)
+│   ├── Affiliate Marketing
+│   ├── Vouchers / Flash Sale / Bundle Deals
+│   └── Campaign
+├── Finance
+│   ├── My Income (escrow details)
+│   ├── My Balance (wallet transactions)
+│   ├── Bank Account
+│   └── Tax
+├── Data
+│   ├── Business Insights (⚠️ không có API — cần Extension scrape)
+│   └── My Reports
+└── Shop Settings
+    ├── Shop Rating / Decoration / Settings
+    └── Customer Service
+```
+
+---
+
+## 📦 2. XCAP Nội sàn Entities — Tham chiếu
+
+| Entity | Mô tả | PK |
 |---|---|---|
-| **Order** | My Orders, Mass Ship, Handover Centre, Return/Refund/Cancel, Shipping Setting | `/portal/sale/*` |
-| **Product** | My Products, Add New Product, Shopee Standard Product, AI Optimiser | `/portal/product/*` |
-| **FBS** | Fulfilled by Shopee | `/portal/fbs` |
-| **Marketing Centre** | Marketing Centre, Shopee Ads, Affiliate Marketing, Live & Video, Discount, My Shop's Flash Deals, Vouchers, Campaign, Best Price in Shopee, International Platform | `/portal/marketing/*` |
-| **Finance** | My Income, My Balance, Bank Account, Tax | `/portal/finance/*` |
-| **Data** | Business Insights, My Reports | `/portal/data/*` |
-| **Shop** | Shop Rating, Shop Decoration, Shop Setting | `/portal/shop/*` |
-| **CS** | Customer Service | `/portal/cs/*` |
+| **EcomShop** | Tài khoản Seller trên sàn | `shopId` |
+| **EcomOrder** | Đơn hàng | `orderId` |
+| **EcomProduct** | Sản phẩm / listing | `productId` |
+| **EcomSettlement** | Thanh toán / settlement từ sàn | `settlementId` |
+| **EcomMetrics** | Chỉ số KPI hàng ngày (pageViews, visitors, convRate…) | `metricId` |
 
 ---
 
-## 1️⃣ DASHBOARD — Tổng quan Shop
+## 📋 3. API Endpoints & Data Mapping
 
-![Shopee Dashboard annotated — 13 data points](assets/shopee_dashboard_ann.png)
+### 3.1 Shop Data
 
-### Header
-| Ô | Field | Vị trí | Giá trị mẫu |
+**API:** `GET /api/v2/shop/get_shop_info`
+
+| Shopee Field | XCAP Entity | XCAP Field | Ghi chú |
 |---|---|---|---|
-| **A** | `shop_name` | Góc phải trên, avatar dropdown | "jointreliefcream" |
+| `shop_id` | EcomShop | shopId | PK |
+| `shop_name` | EcomShop | shopName | |
+| `status` | EcomShop | status | `NORMAL`, `BANNED`, `FROZEN` |
+| `item_count` | EcomShop | totalProducts | |
+| `rating_star` | EcomShop | shopRating | 1–5 scale |
+| `shop_location` | — | — | Metadata |
+| *(hardcode)* | EcomShop | platform | `"shopee"` |
+| *(from project)* | EcomShop | projectCode | FK → Gán khi onboard |
 
-### Khu vực To-Do List (Hàng trên cùng)
-| Ô | Field | Giá trị mẫu | Ý nghĩa |
+**Bổ sung:** `GET /api/v2/shop/get_shop_performance` → Shop score, response rate, late shipment rate.
+
+---
+
+### 3.2 Order Data
+
+**API:** `GET /api/v2/order/get_order_list` → danh sách order_sn
+**API:** `GET /api/v2/order/get_order_detail` → chi tiết từng order
+
+| Shopee Field | XCAP Entity | XCAP Field | Ghi chú |
 |---|---|---|---|
-| **①** | `to_process_shipment` | 2 | Đơn cần xử lý giao |
-| **②** | `processed_shipment` | 3 | Đơn đã xử lý |
-| **③** | `return_refund_cancel` | 72 | Đơn hoàn/hủy |
-| **④** | `banned_products` | 6 | SP bị cấm/giảm boost |
-| **⑤** | `join_cheap` | 8 | SP cần tham gia "Rẻ nhất Shopee" |
+| `order_sn` | EcomOrder | orderId | PK |
+| `order_status` | EcomOrder | status | Xem bảng trạng thái |
+| `total_amount` | EcomOrder | orderAmount | Tổng giá trị đơn |
+| `actual_shipping_fee` | EcomOrder | shippingFee | Phí ship thực tế |
+| `seller_discount` | EcomOrder | sellerDiscount | Voucher seller |
+| `shopee_discount` | EcomOrder | platformDiscount | Shopee subsidy |
+| `estimated_shipping_fee` | — | — | Phí ship ước tính |
+| `buyer_username` | EcomOrder | buyerUsername | |
+| `create_time` | EcomOrder | orderDate | Unix timestamp → ISO |
+| `ship_by_date` | EcomOrder | shipDate | Hạn giao |
+| `pay_time` | — | — | Thời điểm thanh toán |
+| *(hardcode)* | EcomOrder | platform | `"shopee"` |
 
-### Khu vực Business Insights (KPI chính)
+**Tính toán thêm:**
+- `netRevenue` = `orderAmount` - `shippingFee` - `platformFee` - `sellerDiscount` - `platformDiscount`
+- `platformFee` lấy từ Escrow API (section 3.4)
+
+**Order Statuses Mapping:**
+
+| Shopee Status | XCAP Status | Ý nghĩa |
+|---|---|---|
+| `UNPAID` | `pending` | Chưa thanh toán |
+| `READY_TO_SHIP` | `pending` | Chờ giao hàng |
+| `PROCESSED` | `shipping` | Đang xử lý logistics |
+| `SHIPPED` | `shipping` | Đã giao cho vận chuyển |
+| `COMPLETED` | `delivered` | Hoàn tất |
+| `IN_CANCEL` | `cancelled` | Đang hủy |
+| `CANCELLED` | `cancelled` | Đã hủy |
+| `INVOICE_PENDING` | `pending` | Chờ invoice |
+
+**Pagination:** Max 15 ngày/request, 100 items/page. Dùng `cursor` để phân trang.
+
+---
+
+### 3.3 Product Data
+
+**API:** `GET /api/v2/product/get_item_list` → danh sách item_id
+**API:** `GET /api/v2/product/get_item_base_info` → thông tin cơ bản
+**API:** `GET /api/v2/product/get_item_extra_info` → sales, likes, views
+
+| Shopee Field | XCAP Entity | XCAP Field | Ghi chú |
+|---|---|---|---|
+| `item_id` | EcomProduct | productId | PK |
+| `item_name` | EcomProduct | productName | |
+| `item_sku` | EcomProduct | sku | Parent SKU |
+| `price_info.current_price` | EcomProduct | price | Giá hiện tại |
+| `stock_info_v2.summary_info.total_available_stock` | EcomProduct | stock | Tồn kho |
+| `item_status` | EcomProduct | status | `NORMAL`, `BANNED`, `DELETED`, `UNLIST` |
+| `rating_star` | EcomProduct | rating | 1–5 |
+| `comment_count` | EcomProduct | reviewCount | |
+| `category_id` | EcomProduct | category | Cần resolve name qua Category API |
+| `create_time` | EcomProduct | createdAt | |
+| *(hardcode)* | EcomProduct | platform | `"shopee"` |
+
+**Từ `get_item_extra_info`:**
+
+| Field | XCAP Field | Ghi chú |
+|---|---|---|
+| `sale` | totalSold | Tổng đã bán |
+| `likes` | — | Metadata |
+| `views` | — | Metadata (cho EcomMetrics) |
+
+**SKU Variants:** Dùng `GET /api/v2/product/get_model_list` để lấy variant details (size, color, price, stock per SKU).
+
+---
+
+### 3.4 Finance / Income — Settlement
+
+**API:** `GET /api/v2/payment/get_escrow_detail` → Chi tiết thanh toán từng order
+**API:** `GET /api/v2/payment/get_wallet_transaction_list` → Lịch sử giao dịch wallet
+
+#### Escrow Detail (per order):
+
+| Shopee Field | XCAP Entity | XCAP Field | Ghi chú |
+|---|---|---|---|
+| `order_sn` | EcomSettlement | — | FK → orderId |
+| `escrow_amount` | EcomSettlement | netSettlement | Số tiền thực nhận |
+| `buyer_total_amount` | EcomSettlement | grossRevenue | Buyer trả tổng |
+| `commission_fee` | EcomSettlement | platformFee | Phí hoa hồng Shopee |
+| `service_fee` | — | — | Phí dịch vụ (gộp vào platformFee) |
+| `credit_card_transaction_fee` | — | — | Phí giao dịch thẻ |
+| `seller_shipping_discount` | EcomSettlement | shippingFee | Phần ship seller chịu |
+| `escrow_release_time` | EcomSettlement | settlementDate | Thời điểm giải ngân |
+| *(hardcode)* | EcomSettlement | platform | `"shopee"` |
+| *(hardcode)* | EcomSettlement | period | `"per_order"` |
 
 > [!IMPORTANT]
-> Dữ liệu real-time, so sánh với hôm qua. Đây là **core KPIs** cần scrape.
+> `platformFee` = `commission_fee` + `service_fee` + `credit_card_transaction_fee`
+> `adjustments` = `seller_voucher_amount` + `shopee_voucher_amount`
+> `netSettlement` = `grossRevenue` - `platformFee` - `shippingFee` - `adjustments`
 
-| Ô | Field | Giá trị mẫu | % thay đổi | Ghi chú |
-|---|---|---|---|---|
-| **⑥** | `sales` | ₱1,556 | ▲ 478.44% | **Doanh số** — KPI #1 |
-| **⑦** | `visitors` | 20 | ▼ 4.76% | Lượt truy cập shop |
-| **⑧** | `product_clicks` | 16 | ▼ 30.43% | Click vào sản phẩm |
-| **⑨** | `orders` | 4 | ▲ 300.00% | Số đơn hàng |
-| **⑩** | `conversion_rate` | 25.00% | ▲ 20.65% | Tỷ lệ chuyển đổi |
+#### Wallet Transactions:
 
-### Khu vực Shopee Ads & Affiliate (Cards dưới)
-| Ô | Field | Giá trị mẫu | Ghi chú |
-|---|---|---|---|
-| **⑪** | `ads_credit` + `ads_sales` + `roas` | ₱130.76 / ₱937.00 / 8.37 | Credit còn + Doanh số ads + ROAS |
-| **⑫** | `affiliate_sales` + `new_buyers` + `affiliate_roi` | ₱3.2K / 7 / 24.2 | Doanh số affiliate + Buyer mới + ROI |
-
-### Shop Performance (Bên phải)
-| Ô | Field | Giá trị mẫu | Ghi chú |
-|---|---|---|---|
-| **⑬** | `shop_score` | 93 (Good) | Điểm hiệu suất shop |
+| Field | Mapping | Ghi chú |
+|---|---|---|
+| `transaction_id` | settlementId | PK |
+| `amount` | netSettlement | Số tiền +/- |
+| `transaction_type` | — | `WITHDRAWAL`, `ESCROW`, `ADJUSTMENT` |
+| `status` | status | `COMPLETED`, `PENDING`, `FAILED` |
+| `create_time` | settlementDate | |
 
 ---
 
-## 2️⃣ MY PRODUCTS — Sản phẩm
+### 3.5 Return / Refund
 
-![Shopee Products annotated — 11 data points](assets/shopee_products_ann.png)
+**API:** `GET /api/v2/returns/get_return_list`
+**API:** `GET /api/v2/returns/get_return_detail`
 
-### URL
+| Field | Dùng cho | Ghi chú |
+|---|---|---|
+| `return_sn` | Return tracking | |
+| `order_sn` | Link to EcomOrder | |
+| `reason` | Analytics | Lý do trả hàng |
+| `status` | Return status | `REQUESTED`, `ACCEPTED`, `REFUNDED`, `REJECTED` |
+| `refund_amount` | EcomSettlement adjustments | |
+
+**Tính toán:**
+- `returnRate` = count(returns) / count(delivered_orders) × 100
+- `cancelRate` = count(cancelled_orders) / count(all_orders) × 100
+→ Lưu vào **EcomMetrics**.
+
+---
+
+### 3.6 Shopee Ads (In-platform Ads)
+
+**API:** Hạn chế — Shopee Ads API chỉ mở cho một số partner.
+**Phương án chính:** Extension scrape từ Marketing Centre.
+
+| Data Point | Source | XCAP Mapping |
+|---|---|---|
+| Campaign Name | Shopee Ads Dashboard | In-platform Ads table |
+| Budget / Spend | Shopee Ads Dashboard | `budget`, `spend` |
+| Impressions / Clicks | Shopee Ads Dashboard | `impressions`, `clicks` |
+| Orders from Ads | Shopee Ads Dashboard | `orders` |
+| ROAS | Shopee Ads Dashboard | `roas` |
+| Ad Credit Balance | Dashboard Card | `adsCredit` |
+
+**URL cần scrape:**
 ```
-/portal/product/list/all
-```
-
-### Tabs & Filters
-| Ô | Field | Giá trị mẫu | Ghi chú |
-|---|---|---|---|
-| **①** | `status_tabs` | All / Live (8) / Violation (6) / Under Review (0) / Unpublished (0) | Lọc theo trạng thái |
-| **②** | `total_products` | 8 | Tổng SP |
-| **③** | `filter_tags` | Ads Potential / SSP Incorrectly Linked / Bidding Eligible / Gained Voucher | Bộ lọc nhanh |
-| **⑪** | `sub_tabs` | All / Restock (2) / To Review Listing Detail (3) | Tab phụ |
-
-### Bảng sản phẩm
-| Ô | Cột | Field | Giá trị mẫu | Ghi chú |
-|---|---|---|---|---|
-| **④** | Product(s) | `product_name` | "Red Shark milk joint relief cream original 30gam Bone Therapy Cream..." | Tên + thumbnail |
-| **⑤** | Price | `price_range` | ₱1,500 - ₱5,500 | Range giá (nhiều SKU) |
-| **⑥** | Stock | `stock` | 4k / 991 | Tồn kho |
-| **⑦** | Performance | `performance` | "Sales..." | Doanh số SP (L30D) |
-| **⑧** | (dưới tên SP) | `item_id` + `parent_sku` | "Item ID: 28736132581", "Parent SKU: -" | ID sản phẩm + SKU |
-| **⑨** | (badge) | `affiliate_badge` | "AMS Commission >" | SP đã bật Affiliate |
-| **⑩** | Action | `actions` | Edit / Boost / More | Nút thao tác |
-
----
-
-## 3️⃣ MARKETING — Shopee Ads & Affiliate
-
-![Shopee Marketing annotated — 10 data points](assets/shopee_marketing_ann.png)
-
-### Shopee Ads Card (Dashboard)
-| Ô | Field | Giá trị mẫu | Ghi chú |
-|---|---|---|---|
-| **①** | Card title | "Shopee Ads" | Click "More >" để vào trang Ads |
-| **②** | `ads_credit` | ₱176.22 | Số dư credit quảng cáo |
-| **③** | `ads_sales` | ₱318.00 (▼ 44.98%) | Doanh số từ Ads + % thay đổi |
-| **④** | `roas` | 4.78 (▼ 10.90%) | Return on Ad Spend |
-
-### Affiliate Marketing Card (Dashboard)
-| Ô | Field | Giá trị mẫu | Ghi chú |
-|---|---|---|---|
-| **⑤** | Card title | "Affiliate Marketing Solution" | Click "More >" để vào trang Affiliate |
-| **⑥** | `affiliate_sales` | ₱3.2K | Doanh số qua affiliate |
-| **⑦** | `new_buyers` | 7 | Khách mới từ affiliate |
-| **⑧** | `affiliate_roi` | 24.2 | ROI affiliate |
-
-### Thêm metrics
-| Ô | Field | Giá trị mẫu | Ghi chú |
-|---|---|---|---|
-| **⑨** | `competitiveness` | +54% ↗ | Độ cạnh tranh (từ Best Price on Shopee) |
-| **⑩** | `marketing_menu` | 9 items | Menu sidebar Marketing Centre |
-
----
-
-## 📊 TỔNG HỢP — 34 DATA FIELDS
-
-### 🔴 Ưu tiên cao (Core KPIs)
-
-| # | Field | Trang | Giá trị mẫu |
-|---|---|---|---|
-| 1 | `sales` | Dashboard > Business Insights | ₱1,556 |
-| 2 | `orders` | Dashboard > Business Insights | 4 |
-| 3 | `visitors` | Dashboard > Business Insights | 20 |
-| 4 | `conversion_rate` | Dashboard > Business Insights | 25.00% |
-| 5 | `ads_credit` | Dashboard > Shopee Ads card | ₱130.76 |
-| 6 | `ads_sales` | Dashboard > Shopee Ads card | ₱937.00 |
-| 7 | `roas` | Dashboard > Shopee Ads card | 8.37 |
-| 8 | `to_process_shipment` | Dashboard > To-Do List | 2 |
-
-### 🟡 Ưu tiên trung bình (Operations)
-
-| # | Field | Trang | Giá trị mẫu |
-|---|---|---|---|
-| 9 | `product_clicks` | Dashboard > Business Insights | 16 |
-| 10 | `return_refund_cancel` | Dashboard > To-Do List | 72 |
-| 11 | `banned_products` | Dashboard > To-Do List | 6 |
-| 12 | `shop_score` | Dashboard > Shop Performance | 93 |
-| 13 | `affiliate_sales` | Dashboard > Affiliate card | ₱3.2K |
-| 14 | `affiliate_roi` | Dashboard > Affiliate card | 24.2 |
-| 15 | `new_buyers` | Dashboard > Affiliate card | 7 |
-
-### 🟢 Ưu tiên thấp (Product details)
-
-| # | Field | Trang | Giá trị mẫu |
-|---|---|---|---|
-| 16 | `product_name` | My Products table | "Red Shark milk..." |
-| 17 | `price_range` | My Products > Price column | ₱1,500 - ₱5,500 |
-| 18 | `stock` | My Products > Stock column | 4k |
-| 19 | `item_id` | My Products > dưới tên SP | 28736132581 |
-| 20 | `performance` | My Products > Performance | Sales L30D |
-
----
-
-## 🔗 URL PATTERNS cho Extension
-
-```
-Dashboard:     seller.shopee.ph/
-Orders:        seller.shopee.ph/portal/sale/order
-My Products:   seller.shopee.ph/portal/product/list/all
-Shopee Ads:    seller.shopee.ph/portal/marketing/pas/index
-Affiliate:     seller.shopee.ph/portal/marketing/affiliate
-My Income:     seller.shopee.ph/portal/finance/income
-Business Data: seller.shopee.ph/portal/data/business
+/portal/marketing/pas/index      → Keyword Ads
+/portal/marketing/cpc/index      → Discovery Ads
+/portal/marketing/shop_ads       → Shop Ads
 ```
 
 ---
 
-## 🎬 VIDEO WALKTHROUGH
+## 🔌 4. Extension Scraping Guide — Business Insights
 
-![Video recording navigate qua Shopee Seller Centre](assets/shopee_full_walkthrough.webp)
+> [!WARNING]
+> Shopee API **KHÔNG cung cấp** pageViews, visitors, conversionRate, product views, add-to-cart.
+> Bắt buộc dùng Extension scrape từ Business Insights Dashboard.
 
+### Target URL:
+```
+seller.shopee.vn/portal/data/business
+seller.shopee.ph/portal/data/business
+```
+
+### Metrics cần scrape → EcomMetrics:
+
+| UI Location | Field | XCAP Field | Ghi chú |
+|---|---|---|---|
+| Business Insights > Visitors | visitors | visitors | Unique visitors |
+| Business Insights > Page Views | pageViews | pageViews | Total page views |
+| Business Insights > Conversion Rate | conversion_rate | conversionRate | orders/visitors × 100 |
+| Business Insights > Revenue | revenue | revenue | Verify vs Order API |
+| Business Insights > Orders | orders | orders | Verify vs Order API |
+| Product Performance > Views | product_views | — | Per-product views |
+| Product Performance > Add to Cart | add_to_cart | — | ATC count |
+
+### Content Script Flow:
+
+```javascript
+// shopee-noi-san-collector.js
+const SHOPEE_PATTERNS = [
+  'seller.shopee.vn',
+  'seller.shopee.ph',
+  'seller.shopee.co.th'
+];
+
+// Detect Business Insights page
+if (location.pathname.includes('/portal/data/business')) {
+  // Wait for dashboard to load
+  await waitForSelector('.business-insight-card');
+  
+  const metrics = {
+    platform: 'shopee',
+    shopId: extractShopId(), // from URL or DOM
+    date: new Date().toISOString().split('T')[0],
+    visitors: parseNumber(document.querySelector('[data-metric="visitors"]')?.textContent),
+    pageViews: parseNumber(document.querySelector('[data-metric="page_views"]')?.textContent),
+    conversionRate: parseFloat(document.querySelector('[data-metric="conversion_rate"]')?.textContent),
+    revenue: parseNumber(document.querySelector('[data-metric="revenue"]')?.textContent),
+    orders: parseInt(document.querySelector('[data-metric="orders"]')?.textContent),
+  };
+  
+  // Submit to XCAP backend
+  await fetch('/api/ecom/metrics', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(metrics)
+  });
+}
+```
+
+> [!NOTE]
+> DOM selectors là **gợi ý**. Dev cần inspect element trên account thật để xác nhận.
+> Shopee thường dùng `data-*` attributes hoặc class names obfuscated. Dùng **MutationObserver** để detect khi data load xong.
+
+---
+
+## 🔄 5. Sync Strategy
+
+```
+Cron Schedule:
+├── Every 15min:  Order sync (new + status changes)
+│                 GET /api/v2/order/get_order_list?time_range_field=update_time
+├── Every 1h:     Product stock/price sync
+│                 GET /api/v2/product/get_item_list + get_item_base_info
+├── Every 6h:     Full product catalog + extra info (sales, views)
+│                 GET /api/v2/product/get_item_extra_info
+├── Daily 2AM:    Yesterday's orders finalization
+│                 GET /api/v2/order/get_order_list?time_range_field=create_time (yesterday)
+├── Daily 3AM:    Escrow/settlement data
+│                 GET /api/v2/payment/get_escrow_detail (for completed orders)
+├── Daily 4AM:    Return/refund sync
+│                 GET /api/v2/returns/get_return_list
+├── Weekly:       Settlement reconciliation
+│                 Match escrow records vs internal orders
+└── Extension:    Business Insights (realtime khi NV mở page)
+                  Shopee Ads metrics (khi NV mở Marketing Centre)
+```
+
+---
+
+## ⚠️ 6. Rate Limits & Auth
+
+### OAuth 2.0 Flow:
+```
+1. Đăng ký app trên Shopee Open Platform
+2. Seller authorize → redirect URI → auth_code
+3. Exchange auth_code → access_token + refresh_token
+4. Dùng access_token + shop_id + sign (HMAC-SHA256)
+5. Refresh token trước khi hết hạn
+```
+
+### Rate Limits:
+
+| API Category | Limit | Ghi chú |
+|---|---|---|
+| Order APIs | 1 req/s per shop | get_order_list, get_order_detail |
+| Product APIs | 1 req/s per shop | get_item_list, get_item_base_info |
+| Payment APIs | 1 req/s per shop | get_escrow_detail |
+| Shop APIs | 1 req/s per shop | get_shop_info |
+
+### Token Lifecycle:
+
+| Token | TTL | Ghi chú |
+|---|---|---|
+| Access Token | 4 hours | Dùng cho API calls |
+| Refresh Token | 30 days | Dùng để renew access token |
+| Auth Code | 1 use | Dùng 1 lần để lấy token |
+
+### Request Signature:
+```
+sign = HMAC-SHA256(partner_key, path + timestamp + access_token + shop_id)
+```
+
+---
+
+## 📊 7. Dashboard Mapping — KPIs Nội sàn
+
+| Dashboard KPI | Công thức | Data Source |
+|---|---|---|
+| **GMV** | SUM(orders.orderAmount) WHERE status IN (COMPLETED, SHIPPED) | Order API |
+| **Orders** | COUNT(orders) WHERE date = today | Order API |
+| **Conv Rate** | orders / visitors × 100 | Extension (visitors) + Order API (orders) |
+| **AOV** | GMV / Orders | Calculated |
+| **Revenue** | SUM(settlements.netSettlement) | Payment API |
+| **Product Views** | SUM(product.views) | Extension scrape |
+| **ATC (Add to Cart)** | SUM(product.add_to_cart) | Extension scrape |
+
+### Charts:
+- **Daily GMV by Platform** → EcomMetrics.revenue (platform = shopee)
+- **Order Trend** → EcomMetrics.orders (7-day / 30-day trend)
+- **Top Products by Revenue** → EcomProduct sorted by totalRevenue DESC
+
+---
+
+## 🔁 8. Settlement Reconciliation
+
+### Flow: Sàn Settlement ↔ Bank Transfer
+
+```
+1. Order hoàn tất (COMPLETED)
+     ↓
+2. Shopee tính escrow detail:
+   grossRevenue - commission - service_fee - shipping = netSettlement
+     ↓
+3. XCAP download escrow qua API
+     ↓
+4. So khớp với internal order records:
+   ✅ SUM(order.netRevenue) cho period == settlement.netSettlement
+   ❌ Nếu chênh lệch → Flag discrepancy
+     ↓
+5. Shopee chuyển tiền vào bank account
+     ↓
+6. XCAP match bank transfer amount vs expected settlement
+     ↓
+7. Generate recon report: Matched / Partial / Unmatched
+```
+
+### Discrepancy Types:
+
+| Loại | Ví dụ | Action |
+|---|---|---|
+| **Missing Order** | Order trong Shopee nhưng không có trong XCAP | Sync lại order |
+| **Fee Mismatch** | Commission rate khác so với expected | Review Shopee fee policy |
+| **Adjustment** | Refund/penalty chưa track | Update settlement record |
+| **Bank Amount** | Bank transfer ≠ expected settlement | Escalate to finance |
+
+---
+
+## ✅ 9. Implementation Checklist
+
+### Phase 1: Setup (Week 1)
+- [ ] Đăng ký Shopee Open Platform app
+- [ ] Implement OAuth 2.0 flow + token refresh
+- [ ] Setup shop authorization cho tất cả shops
+- [ ] Tạo `EcomShop` records cho mỗi shop
+
+### Phase 2: Core Data (Week 2-3)
+- [ ] Order sync worker (15-min cron)
+- [ ] Product sync worker (1h + 6h cron)
+- [ ] Escrow/settlement sync (daily cron)
+- [ ] Return/refund sync (daily cron)
+- [ ] Order status mapping (Shopee → XCAP)
+- [ ] `netRevenue` calculation pipeline
+
+### Phase 3: Extension (Week 3-4)
+- [ ] Business Insights scraper (visitors, pageViews, convRate)
+- [ ] Shopee Ads scraper (credit, spend, ROAS)
+- [ ] Product performance scraper (views, ATC)
+- [ ] Extension → POST /api/ecom/metrics endpoint
+
+### Phase 4: Dashboard & Recon (Week 4-5)
+- [ ] KPI cards: GMV, Orders, Conv Rate, AOV, Revenue
+- [ ] Charts: Daily GMV trend, Top Products
+- [ ] Tables: Shop Performance, Product Rankings
+- [ ] Settlement reconciliation engine
+- [ ] Discrepancy detection + alerting
+- [ ] Cross-stream violation check (Card isolation)
+
+---
+
+> [!IMPORTANT]
+> **Shopee API cần chú ý:**
+> - Timestamp phải là **UTC+8 (Singapore time)**
+> - Order date range max **15 ngày** per request
+> - Pagination dùng **cursor-based**, không dùng offset
+> - Tất cả request cần **sign** (HMAC-SHA256)
+> - `shop_id` bắt buộc trong mọi request

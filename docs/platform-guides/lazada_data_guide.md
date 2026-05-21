@@ -1,266 +1,495 @@
-# 📋 Lazada Seller Center — Annotated Data Map
+# 🏪 Lazada — Hướng dẫn Lấy Dữ liệu cho XCAP NỘI SÀN
 
-> **Shop:** PureNutra Medic
-> **Market:** Philippines (sellercenter.lazada.com.ph)
-> **Ngày chụp:** 11/05/2026 — Screenshots thật
-> **Tổng:** 6 sản phẩm, 2 đơn hôm nay
+> **Mục tiêu:** Dev biết chính xác cần lấy gì từ Lazada, ở đâu, API endpoint nào, fields nào map vào entity nào trong XCAP Nội sàn system.
+> **Stream:** `noi_san` — On-Platform E-commerce
+> **API Docs:** https://open.lazada.com/apps/doc/api
+> **Auth:** OAuth 2.0
 
 ---
 
-## 📌 SIDEBAR NAVIGATION (Menu trái)
+## 🏗️ 1. Kiến trúc Tổng quan
 
-| Section | Menu items | URL Pattern |
+```
+Lazada Seller Center (sellercenter.lazada.vn)
+├── Home Dashboard
+│   ├── Task List (pending orders, returns)
+│   ├── Business Advisor (revenue, orders, visitors)
+│   ├── Seller Growth Metrics (FFR, Chat Response)
+│   └── LazFlash Invitations
+├── Orders
+│   ├── Manage Orders (all statuses)
+│   ├── Returns & Refunds
+│   ├── Cancellations
+│   └── Reporting Management
+├── Products
+│   ├── Manage Products (listing management)
+│   ├── Add Products
+│   ├── Quality Center
+│   ├── Fulfillment By Lazada (FBL)
+│   └── Opportunity Center
+├── Marketing Center
+│   ├── Promotions (Vouchers, Flexi Combo, Free Shipping)
+│   ├── Campaign
+│   ├── LazFlash / LazLive / LazCoins
+│   └── Customer Engagement
+├── Sponsored Solutions (In-platform Ads)
+│   ├── Sponsored Products
+│   ├── Sponsored Discovery
+│   └── Sponsored Affiliate
+├── Finance
+│   ├── Account Statement
+│   ├── Transaction Overview (payout details)
+│   ├── Logistics Fee
+│   └── SVC Overview
+├── Data Insight
+│   └── Business Advisor (⚠️ không có public API — cần Extension scrape)
+└── Settings
+    ├── Account / Shipping Settings
+    └── Store Decoration
+```
+
+---
+
+## 📦 2. XCAP Nội sàn Entities — Tham chiếu
+
+| Entity | Mô tả | PK |
 |---|---|---|
-| **Common Tools** | Manage Products, Orders, Promotions | Quick shortcuts |
-| **Products** | Manage Products, Add Products, Decorate Products, Fulfillment By Lazada, Opportunity Center, Assortment Growth Center | `/apps/product/*` |
-| **Orders** | Orders, Logistics, Return Orders, Reviews, Reporting Management | `/apps/order/*` |
-| **Marketing Center** | Campaign, Promotions, LazFlash, LazLive, LazCoins Discount, Lazada Program, Customer Engagement, Priority Delivery | `/apps/marketing/*` |
-| **Sponsored Solutions** | Quảng cáo Lazada (có 🔴 notification dot) | `/apps/sponsored/*` |
-| **Store** | Shop decoration, store settings | `/apps/store/*` |
-| **Finance** | My Income, My Balance, Logistics Fee, SVC Overview | `/apps/finance/*` |
-| **Data Insight** | Business Advisor | `/apps/data/*` |
-| **Service Center** | Customer service tools | `/apps/service/*` |
-| **Setting** | Account, shipping settings | `/apps/setting/*` |
+| **EcomShop** | Tài khoản Seller trên sàn | `shopId` |
+| **EcomOrder** | Đơn hàng | `orderId` |
+| **EcomProduct** | Sản phẩm / listing | `productId` |
+| **EcomSettlement** | Thanh toán / payout từ sàn | `settlementId` |
+| **EcomMetrics** | Chỉ số KPI hàng ngày | `metricId` |
 
 ---
 
-## 1️⃣ DASHBOARD — Tổng quan Shop (CLEAN — không popup)
+## 📋 3. API Endpoints & Data Mapping
 
-![Lazada Dashboard annotated — 10 data points](assets/lazada_dashboard_ann.png)
+### 3.1 Seller / Shop Data
 
-### Header
-| Ô | Field | Giá trị mẫu | Ghi chú |
+**API:** `GET /seller/get`
+
+| Lazada Field | XCAP Entity | XCAP Field | Ghi chú |
 |---|---|---|---|
-| **A** | `shop_name` | "PureNutra Medic" | Hiển thị ngay đầu trang |
+| `seller_id` | EcomShop | shopId | PK |
+| `name` | EcomShop | shopName | |
+| `short_code` | EcomShop | shopUrl | Store URL slug |
+| `status` | EcomShop | status | `active`, `inactive`, `suspended` |
+| `cb` | — | — | Cross-border seller flag |
+| `verified` | — | — | Seller verification status |
+| *(hardcode)* | EcomShop | platform | `"lazada"` |
+| *(from project)* | EcomShop | projectCode | FK → Gán khi onboard |
 
-### Task List (Hàng trên cùng)
-| Ô | Field | Giá trị mẫu | Ghi chú |
+**Bổ sung:** Lazada không có trực tiếp `totalProducts`, `totalOrders`, `shopRating` trong seller API → Tính từ Products API + Orders API.
+
+---
+
+### 3.2 Order Data
+
+**API:** `GET /orders/get` → danh sách orders (filter by status, date range)
+**API:** `GET /orders/items/get` → chi tiết items trong order
+
+#### Order Level:
+
+| Lazada Field | XCAP Entity | XCAP Field | Ghi chú |
 |---|---|---|---|
-| **①** | `unpaid_orders` | 0 | Đơn chưa thanh toán |
-| **①** | `pending_pack` | 0 | Đơn chờ đóng gói |
-| **①** | `pending_shipping` | 0 | Đơn chờ giao |
-| **①** | `to_approve_cancel` | 0 | Đơn chờ duyệt hủy |
-| **①** | `pending_return` | 0 | Đơn chờ hoàn trả |
+| `order_id` | EcomOrder | orderId | PK (Lazada format) |
+| `statuses` | EcomOrder | status | Array — xem mapping bên dưới |
+| `price` | EcomOrder | orderAmount | Tổng giá trị đơn |
+| `shipping_fee` | EcomOrder | shippingFee | |
+| `voucher_seller` | EcomOrder | sellerDiscount | Voucher seller |
+| `voucher_platform` | EcomOrder | platformDiscount | Lazada subsidy |
+| `customer_name` | EcomOrder | buyerUsername | |
+| `created_at` | EcomOrder | orderDate | ISO 8601 format |
+| `updated_at` | — | — | |
+| *(hardcode)* | EcomOrder | platform | `"lazada"` |
 
-### Operations Overview (3 khối)
-| Ô | Field | Giá trị mẫu | Ghi chú |
-|---|---|---|---|
-| **②** | `waiting_pickup` | 14 | Logistics: chờ lấy hàng |
-| **②** | `pickup_exceptions` | 14 | Logistics: lỗi lấy hàng |
-| **③** | `out_of_stock` | 2 | Products: hết hàng |
-| **③** | `qc_issues` | 1 | Products: lỗi QC |
-| **③** | `to_be_reviewed` | 104 | Products: chờ review |
-| **④** | `ongoing_penalties` | 3 | Violation: đang phạt |
-| **④** | `orders_breach_fee` | 2 | Violation: đơn bị phí |
+#### Order Items Level (`/orders/items/get`):
 
-### Business Advisor (KPIs chính)
+| Field | Mapping | Ghi chú |
+|---|---|---|
+| `order_item_id` | Line item ID | Per-item tracking |
+| `sku` | → EcomProduct.sku | Match product |
+| `name` | Product name | |
+| `paid_price` | Item price after discounts | |
+| `shipping_amount` | Shipping per item | |
+| `voucher_amount` | Discount per item | |
+| `status` | Item-level status | Có thể khác vs order status |
 
 > [!IMPORTANT]
-> Dữ liệu real-time (till GMT+8), so sánh vs Yesterday same period
+> Lazada có **item-level statuses** — mỗi item trong 1 order có thể ở status khác nhau.
+> Cần track cả order-level VÀ item-level để reconciliation chính xác.
 
-| Ô | Field | Giá trị mẫu | % thay đổi | Ghi chú |
-|---|---|---|---|---|
-| **⑤** | `revenue` | ₱1,533 | +126.10% | **KPI #1** — Revenue Today |
-| **⑤** | `orders` | 2 | — | Số đơn hàng |
-| **⑤** | `visitors` | 1 | — | Khách truy cập |
+**Order Statuses Mapping:**
 
-### Seller Growth Metrics
-| Ô | Field | Giá trị mẫu | Ghi chú |
-|---|---|---|---|
-| **⑥** | `fast_fulfilment_rate` (FFR) | 79.78% | Tỉ lệ hoàn tất nhanh |
-| **⑦** | `chat_response_rate` | 90% | Tỉ lệ trả lời chat |
-
-### LazFlash & Sidebar
-| Ô | Field | Ghi chú |
+| Lazada Status | XCAP Status | Ý nghĩa |
 |---|---|---|
-| **⑧** | `lazflash_invitation` | SP được mời flash sale (₱209.29, Traffic Uplift 2X-5X) |
-| **⑨** | `seller_growth` | Panel seller growth metrics |
-| **⑩** | `sidebar_menu` | 9 sections: Common Tools → Setting |
+| `pending` | `pending` | Chờ xử lý |
+| `packed` | `pending` | Đã đóng gói |
+| `ready_to_ship` | `pending` | Sẵn sàng giao |
+| `shipped` | `shipping` | Đang vận chuyển |
+| `delivered` | `delivered` | Đã giao thành công |
+| `failed` | `cancelled` | Giao hàng thất bại |
+| `returned` | `returned` | Đã hoàn trả |
+| `cancelled` | `cancelled` | Đã hủy |
+
+**Pagination:** `offset` + `limit` (max 100 items). Date range max **15 ngày** per request.
 
 ---
 
-## 2️⃣ ORDER MANAGEMENT — Quản lý đơn hàng
+### 3.3 Product Data
 
-![Lazada Orders annotated — 8 data points](assets/lazada_orders_ann.png)
+**API:** `GET /products/get` → product list with details
 
-### URL
-```
-/apps/order/index
-```
+| Lazada Field | XCAP Entity | XCAP Field | Ghi chú |
+|---|---|---|---|
+| `item_id` | EcomProduct | productId | PK |
+| `attributes.name` | EcomProduct | productName | |
+| `skus[0].SellerSku` | EcomProduct | sku | SKU chính |
+| `skus[0].price` | EcomProduct | price | Giá hiện tại |
+| `skus[0].quantity` | EcomProduct | stock | Tồn kho |
+| `status` | EcomProduct | status | `active`, `inactive`, `deleted`, `suspended` |
+| `primary_category` | EcomProduct | category | Category ID → resolve name |
+| `skus[0].Images` | — | — | Product images array |
+| *(hardcode)* | EcomProduct | platform | `"lazada"` |
+| `created_at` | EcomProduct | createdAt | |
 
-### Order Status Tabs
+**Không có sẵn qua API — cần scrape hoặc tính:**
 
-| Tab | Badge | Ghi chú |
+| Field | XCAP Field | Cách lấy |
 |---|---|---|
-| All | — | Tất cả đơn |
-| Unpaid | — | Chưa thanh toán |
-| **To Ship** | 🔴 14 | Cần gửi hàng |
-| Shipping | 🔴 1 | Đang giao |
-| Delivered | — | Đã giao |
-| Failed | — | Thất bại |
-| Refund | — | Hoàn tiền |
-| To Handover | 🔴 14 | Cần bàn giao |
+| totalSold | totalSold | SUM(order_items) WHERE product matches |
+| totalRevenue | totalRevenue | SUM(paid_price) WHERE product matches |
+| rating | rating | Scrape từ Product page hoặc Reviews API |
+| reviewCount | reviewCount | `GET /reviews/seller/get` (nếu có access) |
 
-### Performance Bar (top right)
-| Field | Giá trị | Ghi chú |
-|---|---|---|
-| `cancellation_rate` | 0% | Tỷ lệ hủy |
-| `pnr` | 0% | Package Not Received rate |
-| `ffr` | 79.78% | Fast Fulfilment Rate |
-| `ffr_plus` | 79.78% | FFR+ (enhanced) |
-
-### Order Table Columns
-| Cột | Field | Ghi chú |
-|---|---|---|
-| Product | `product_info` | Tên + ảnh sản phẩm |
-| Total Amount | `total_amount` | Tổng tiền đơn |
-| Delivery | `delivery_info` | Thông tin vận chuyển |
-| Status | `order_status` | Trạng thái đơn |
-| Actions | `actions` | Pack & Print, Negotiate... |
-
-### Fulfillment Filters
-| Filter | Options |
-|---|---|
-| Fulfillment SLA | About to Breach SLA (0), SLA Breached (0) |
-| Priority Order | Priority Delivery |
-| Print Status | AWB Unprinted, AWB Printed, Packing List Unprinted |
+**SKU Variants:** Mỗi product có array `skus[]` — mỗi SKU có riêng: SellerSku, price, quantity, Images, package dimensions.
 
 ---
 
-## 3️⃣ MANAGE PRODUCTS — Quản lý sản phẩm
+### 3.4 Finance / Transactions
 
-![Lazada Products annotated — 10 data points](assets/lazada_products_ann.png)
+**API:** `GET /finance/transaction/detail/get` → Chi tiết giao dịch
+**API:** `GET /finance/payout/status/get` → Trạng thái payout
 
-### URL
-```
-/apps/product/manage
-```
+#### Transaction Detail:
 
-### Product Overview Cards
-| Ô | Field | Giá trị mẫu | Ghi chú |
+| Lazada Field | XCAP Entity | XCAP Field | Ghi chú |
 |---|---|---|---|
-| **①** | `product_limitation` | 6 / 5,000 | Số SP / Giới hạn |
-| **①** | `qc_alert` | 0 No issue | Cảnh báo QC |
-| **①** | `attribute_management` | 1 product(s) | SP cần sửa attribute |
+| `transaction_number` | EcomSettlement | settlementId | PK |
+| `amount` | — | — | Amount per transaction type |
+| `transaction_type` | — | — | Xem mapping bên dưới |
+| `order_no` | — | — | FK → EcomOrder.orderId |
+| `paid_status` | EcomSettlement | status | `pending`, `paid` |
+| `transaction_date` | EcomSettlement | settlementDate | |
+| `fee_name` | — | — | Detail: commission, shipping, etc. |
+| *(hardcode)* | EcomSettlement | platform | `"lazada"` |
 
-### Status Tabs
-| Ô | Tab | Count | Ghi chú |
-|---|---|---|---|
-| **②** | All | — | Tất cả |
-| **②** | Active | 🔵 6 | Đang bán |
-| **②** | Inactive | 🔴 1 | Ngừng bán |
-| **②** | Draft | — | Bản nháp |
-| **②** | Pending QC | — | Chờ duyệt |
-| **②** | Violation | 🔴 1 | Vi phạm |
-| **②** | Deleted | — | Đã xóa |
+**Transaction Types → Settlement Mapping:**
 
-### Product Table
-| Ô | Cột | Field | Giá trị mẫu | Ghi chú |
-|---|---|---|---|---|
-| **③** | Product Info | `product_name` | "Nano Silver FDA APPROVED Original 250ml Food Supplement for Pets" | Tên + thumbnail |
-| **④** | Price | `price` | ₱299 - 1,969 | Range giá (nhiều SKU) |
-| **⑤** | Stock | `stock` | 39,743 | Tồn kho |
-| **⑥** | Active | `active_toggle` | 🔵 ON / ⚫ OFF | Bật/tắt sản phẩm |
-| **⑦** | (dưới tên SP) | `product_id` | 5377977702 | Lazada Product ID |
-| **⑧** | (icons dưới SP) | `product_metrics` | 👍100 👁100 🛒1,999 ⭐4.6 | Likes / Views / Sold / Rating |
-
-### Sidebar Menus
-| Ô | Menu | Items |
+| Transaction Type | XCAP Mapping | Ghi chú |
 |---|---|---|
-| **⑨** | Products | Manage Products, Add Products, Decorate, FBL, Opportunity Center, Assortment Growth |
-| **⑩** | Finance | My Income, My Balance, Logistics Fee, SVC Overview |
+| `Item Revenue` | grossRevenue | Doanh thu sản phẩm |
+| `Commission` | platformFee (cộng dồn) | Hoa hồng Lazada |
+| `Shipping Fee` | shippingFee | Phí vận chuyển |
+| `Service Fee` | platformFee (cộng dồn) | Phí dịch vụ |
+| `Adjustment` | adjustments | Điều chỉnh |
+| `Refund` | adjustments (trừ) | Hoàn tiền |
+
+> [!IMPORTANT]
+> **platformFee** = `Commission` + `Service Fee` + other fees
+> **adjustments** = `Adjustment` + `Refund` + `Penalty`
+> **netSettlement** = `grossRevenue` - `platformFee` - `shippingFee` - `adjustments`
+
+#### Payout Status:
+
+| Field | XCAP Field | Ghi chú |
+|---|---|---|
+| `statement_number` | settlementId | Payout statement ID |
+| `payout_amount` | netSettlement | Số tiền thực nhận |
+| `start_date` / `end_date` | period | Khoảng thời gian payout |
+| `status` | status | `processing`, `paid` |
 
 ---
 
-## 4️⃣ MARKETING — Promotions & Marketing Tools
+### 3.5 Return / Refund
 
-![Lazada Marketing annotated — 8 data points](assets/lazada_marketing_ann.png)
+**API:** `GET /order/reverse/get` → Reverse orders (returns, refunds)
 
-### URL
-```
-/apps/marketing/promotions
-```
-
-### Tabs & Smart Suggestions
-| Ô | Field | Giá trị mẫu | Ghi chú |
-|---|---|---|---|
-| **①** | `promotion_tabs` | Promotions / Smart Promotion (New) | 2 tab chính |
-| **②** | `smart_suggestion` | GASTRO-P ₱230, Min.Spend ₱2,200, Specific Product Voucher | Gợi ý voucher từ Lazada |
-
-### Marketing Tools
-| Ô | Field | Ghi chú |
+| Field | Dùng cho | Ghi chú |
 |---|---|---|
-| **③** | `marketing_tools` | Flexi Combo, Seller Free Shipping, Add-On Deals |
-| **④** | `voucher_types` | Regular Voucher, Store New Buyer Voucher, Store Follower Voucher |
-| **⑤** | `tool_categories` | Popular Tools / Improve Store Conversion / Improve Basket Size / Others |
+| `reverse_order_id` | Return tracking | |
+| `order_id` | FK → EcomOrder | |
+| `reason` | Analytics | Lý do trả hàng |
+| `status` | Return status | `REQUESTED`, `PROCESSING`, `SUCCESS`, `REJECTED` |
+| `refund_amount` | Settlement adjustments | |
+| `created_at` | Tracking timeline | |
 
-### Sidebar Navigation
-| Ô | Menu | Items |
-|---|---|---|
-| **⑥** | Marketing Center | Campaign, Promotions, LazFlash, LazLive, LazCoins Discount, Lazada Program, Customer Engagement, Priority Delivery |
-| **⑦** | **Sponsored Solutions** 🔴 | Quảng cáo trả phí Lazada (tương tự Shopee Ads) |
-| **⑧** | Data Insight | Business Advisor |
+**Tính toán:**
+- `returnRate` = count(returned_orders) / count(delivered_orders) × 100
+- `cancelRate` = count(cancelled_orders) / count(all_orders) × 100
+→ Lưu vào **EcomMetrics** daily.
 
 ---
 
-## 📊 TỔNG HỢP — 30 DATA FIELDS
+### 3.6 Lazada Sponsored Solutions (In-platform Ads)
 
-### 🔴 Ưu tiên cao (Core KPIs)
+**API:** Hạn chế — Lazada Sponsored Solutions API không public.
+**Phương án chính:** Extension scrape từ Sponsored Solutions Dashboard.
 
-| # | Field | Trang | Giá trị mẫu |
-|---|---|---|---|
-| 1 | `revenue` | Dashboard | ₱1,533 |
-| 2 | `orders` | Dashboard | 2 |
-| 3 | `vs_yesterday` | Dashboard | +126.10% |
-| 4 | `fast_fulfilment_rate` | Dashboard / Orders | 79.78% |
-| 5 | `chat_response_rate` | Dashboard | 90% |
-| 6 | `cancellation_rate` | Orders top bar | 0% |
-| 7 | `to_ship_count` | Orders tabs | 14 |
+| Data Point | Source | XCAP Mapping |
+|---|---|---|
+| Campaign Name | Sponsored Products Dashboard | In-platform Ads table |
+| Budget / Spend | Sponsored Dashboard | `budget`, `spend` |
+| Impressions / Clicks | Sponsored Dashboard | `impressions`, `clicks` |
+| Orders from Ads | Sponsored Dashboard | `orders` |
+| ROAS | Sponsored Dashboard | `roas` |
+| Ad Type | Sponsored Dashboard | `Sponsored Products` / `Discovery` / `Affiliate` |
 
-### 🟡 Ưu tiên trung bình (Operations)
-
-| # | Field | Trang | Giá trị mẫu |
-|---|---|---|---|
-| 8 | `order_status` | Orders table | To Ship / Shipping / Delivered |
-| 9 | `total_amount` | Orders table | Tổng tiền đơn |
-| 10 | `delivery_info` | Orders table | Carrier + tracking |
-| 11 | `product_limitation` | Products overview | 6 / 5,000 |
-| 12 | `qc_alert` | Products overview | 0 No issue |
-| 13 | `active_count` | Products tabs | Active (6) |
-| 14 | `violation_count` | Products tabs | Violation (1) |
-| 15 | `task_list` | Dashboard | 0/2 |
-
-### 🟢 Ưu tiên thấp (Product & Marketing)
-
-| # | Field | Trang | Giá trị mẫu |
-|---|---|---|---|
-| 16 | `product_name` | Products table | "Nano Silver FDA..." |
-| 17 | `price` | Products table | ₱299 - 1,969 |
-| 18 | `stock` | Products table | 39,743 |
-| 19 | `product_id` | Products table | 5377977702 |
-| 20 | `product_sold` | Product metrics | 1,999 |
-| 21 | `product_rating` | Product metrics | 4.6 |
-| 22 | `product_views` | Product metrics | 100 |
-| 23 | `shop_name` | Header | PureNutra Medic |
-
----
-
-## 🔗 URL PATTERNS cho Extension
-
+**URL cần scrape:**
 ```
-Dashboard:    sellercenter.lazada.com.ph/
-Orders:       sellercenter.lazada.com.ph/apps/order/index
-Products:     sellercenter.lazada.com.ph/apps/product/manage
-Promotions:   sellercenter.lazada.com.ph/apps/marketing/promotions
-Sponsored:    sellercenter.lazada.com.ph/apps/sponsored/campaign
-My Income:    sellercenter.lazada.com.ph/apps/finance/income
-My Balance:   sellercenter.lazada.com.ph/apps/finance/balance
-Data Insight: sellercenter.lazada.com.ph/apps/data/business-advisor
+/apps/sponsored/campaign          → Campaign list
+/apps/sponsored/product           → Sponsored Products
+/apps/sponsored/discovery         → Sponsored Discovery
+/apps/sponsored/affiliate         → Sponsored Affiliate
 ```
 
 ---
 
-## 🎬 VIDEO WALKTHROUGH
+## 🔌 4. Extension Scraping Guide — Business Advisor
 
-![Video navigate qua Lazada Seller Center: Dashboard → Orders → Products → Marketing](assets/lazada_full_walkthrough.webp)
+> [!WARNING]
+> Lazada Business Advisor data **KHÔNG CÓ public API**.
+> Bắt buộc dùng Extension scrape từ Data Insight page.
 
+### Target URL:
+```
+sellercenter.lazada.vn/apps/data/business-advisor
+sellercenter.lazada.com.ph/apps/data/business-advisor
+sellercenter.lazada.co.th/apps/data/business-advisor
+```
+
+### Metrics cần scrape → EcomMetrics:
+
+| UI Location | Field | XCAP Field | Ghi chú |
+|---|---|---|---|
+| Business Advisor > Revenue | revenue | revenue | KPI #1 |
+| Business Advisor > Orders | orders | orders | Verify vs Order API |
+| Business Advisor > Visitors | visitors | visitors | Unique visitors |
+| Business Advisor > Page Views | page_views | pageViews | |
+| Business Advisor > Conversion Rate | conversion_rate | conversionRate | |
+| Product Rankings > Views | product_views | — | Per-product |
+| Product Rankings > Sold | items_sold | itemsSold | |
+| Traffic Analysis > Sources | traffic_sources | — | Metadata |
+
+### Content Script Flow:
+
+```javascript
+// lazada-noi-san-collector.js
+const LAZADA_PATTERNS = [
+  'sellercenter.lazada.vn',
+  'sellercenter.lazada.com.ph',
+  'sellercenter.lazada.co.th'
+];
+
+// Detect Business Advisor page
+if (location.pathname.includes('/apps/data/business-advisor')) {
+  await waitForSelector('.business-advisor-container');
+  
+  const metrics = {
+    platform: 'lazada',
+    shopId: extractSellerId(), // from URL params or DOM
+    date: new Date().toISOString().split('T')[0],
+    revenue: parseNumber(querySelector('[data-metric="revenue"]')?.textContent),
+    orders: parseInt(querySelector('[data-metric="orders"]')?.textContent),
+    visitors: parseInt(querySelector('[data-metric="visitors"]')?.textContent),
+    pageViews: parseInt(querySelector('[data-metric="page_views"]')?.textContent),
+    conversionRate: parseFloat(querySelector('[data-metric="conversion_rate"]')?.textContent),
+  };
+  
+  await fetch('/api/ecom/metrics', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(metrics)
+  });
+}
+
+// Detect Dashboard page → scrape seller growth metrics
+if (location.pathname === '/' || location.pathname.includes('/apps/seller/dashboard')) {
+  const growth = {
+    fastFulfilmentRate: parseFloat(querySelector('[data-metric="ffr"]')?.textContent),
+    chatResponseRate: parseFloat(querySelector('[data-metric="chat_response"]')?.textContent),
+    cancellationRate: parseFloat(querySelector('[data-metric="cancellation"]')?.textContent),
+  };
+  // Submit growth metrics
+}
+```
+
+> [!NOTE]
+> DOM selectors là **gợi ý**. Lazada dùng React — elements có thể re-render.
+> Dùng **MutationObserver** hoặc **polling interval (30s)** để ensure data loaded.
+
+---
+
+## 🔄 5. Sync Strategy
+
+```
+Cron Schedule:
+├── Every 15min:  Order sync (new + status changes)
+│                 GET /orders/get?sort_by=updated_at
+├── Every 1h:     Product stock/price sync
+│                 GET /products/get
+├── Every 6h:     Full product catalog sync
+│                 GET /products/get (all statuses)
+├── Daily 2AM:    Yesterday's orders finalization
+│                 GET /orders/get?created_after=yesterday
+├── Daily 3AM:    Finance transaction sync
+│                 GET /finance/transaction/detail/get
+├── Daily 4AM:    Return/refund sync
+│                 GET /order/reverse/get
+├── Weekly:       Payout reconciliation
+│                 GET /finance/payout/status/get
+│                 Match vs bank transfers
+└── Extension:    Business Advisor (realtime khi NV mở page)
+                  Sponsored Solutions (khi NV mở ads dashboard)
+```
+
+---
+
+## ⚠️ 6. Rate Limits & Auth
+
+### OAuth 2.0 Flow:
+```
+1. Đăng ký app trên Lazada Open Platform
+2. Seller authorize → redirect → auth code
+3. POST /auth/token/create → access_token + refresh_token
+4. Dùng access_token trong mọi API call
+5. Refresh trước khi hết hạn (7 ngày)
+```
+
+### Token Lifecycle:
+
+| Token | TTL | Ghi chú |
+|---|---|---|
+| Access Token | 7 days | Dùng cho API calls |
+| Refresh Token | 30 days | Dùng để renew access token |
+| Auth Code | 1 use | Chỉ dùng 1 lần |
+
+### Rate Limits:
+
+| API Category | Limit | Ghi chú |
+|---|---|---|
+| Order APIs | ~20 req/min | get orders, items |
+| Product APIs | ~20 req/min | get, update products |
+| Finance APIs | ~10 req/min | transactions, payouts |
+| Seller APIs | ~10 req/min | seller info |
+
+### Request Signature:
+```
+sign = HMAC-SHA256(app_secret, sorted_params_string)
+```
+
+> [!IMPORTANT]
+> Lazada API dùng **offset pagination** (không phải cursor).
+> Max items per page: **100** (orders), **500** (products).
+> Order date range max **15 ngày** per request.
+
+---
+
+## 📊 7. Dashboard Mapping — KPIs Nội sàn
+
+| Dashboard KPI | Công thức | Data Source |
+|---|---|---|
+| **GMV** | SUM(orders.orderAmount) WHERE status IN (delivered, shipped) | Order API |
+| **Orders** | COUNT(orders) WHERE date = today | Order API |
+| **Conv Rate** | orders / visitors × 100 | Extension (visitors) + Order API (orders) |
+| **AOV** | GMV / Orders | Calculated |
+| **Revenue** | SUM(settlements.netSettlement) | Finance API |
+| **FFR** | Fast Fulfilment Rate | Extension (Dashboard) |
+| **Chat Response** | Response rate | Extension (Dashboard) |
+
+### Charts:
+- **Daily GMV** → EcomMetrics.revenue (platform = lazada)
+- **Order Trend** → EcomMetrics.orders (7-day / 30-day)
+- **Top Products by Revenue** → EcomProduct sorted by totalRevenue DESC
+- **Product Rankings** → Extension scrape (Business Advisor)
+
+---
+
+## 🔁 8. Settlement Reconciliation
+
+### Flow: Lazada Payout ↔ Bank Transfer
+
+```
+1. Order delivered + buyer confirm
+     ↓
+2. Lazada settlement period (bi-weekly / monthly):
+   grossRevenue - commission - service_fee - shipping = netPayout
+     ↓
+3. XCAP download transactions via Finance API
+     ↓
+4. Aggregate by statement period:
+   SUM(Item Revenue) - SUM(Commission) - SUM(Shipping) - SUM(Adjustments)
+     ↓
+5. Match vs payout amount from /finance/payout/status/get
+   ✅ Match → mark as RECONCILED
+   ❌ Mismatch → Flag discrepancy + detail breakdown
+     ↓
+6. Verify bank transfer received matches expected payout
+     ↓
+7. Generate recon report
+```
+
+### Discrepancy Types:
+
+| Loại | Ví dụ | Action |
+|---|---|---|
+| **Missing Transaction** | Order trong Lazada nhưng không có transaction record | Re-sync finance data |
+| **Fee Mismatch** | Commission rate bất thường | Check Lazada fee tier |
+| **Refund Not Tracked** | Return refund chưa match | Sync reverse orders |
+| **Payout Delay** | Expected payout chưa paid | Monitor payout status |
+| **Bank Mismatch** | Bank credit ≠ payout amount | Escalate to finance team |
+
+---
+
+## ✅ 9. Implementation Checklist
+
+### Phase 1: Setup (Week 1)
+- [ ] Đăng ký Lazada Open Platform app
+- [ ] Implement OAuth 2.0 flow + token refresh (7-day cycle)
+- [ ] Setup seller authorization cho tất cả shops
+- [ ] Tạo `EcomShop` records (seller_id, platform=lazada)
+- [ ] Test API connectivity + rate limit handling
+
+### Phase 2: Core Data (Week 2-3)
+- [ ] Order sync worker (15-min cron) + item-level tracking
+- [ ] Product sync worker (1h + 6h cron) + SKU variants
+- [ ] Finance transaction sync (daily cron)
+- [ ] Return/refund sync (daily cron)
+- [ ] Order status mapping (Lazada → XCAP)
+- [ ] `netRevenue` calculation (grossRevenue - all fees)
+- [ ] `totalSold` / `totalRevenue` aggregation per product
+
+### Phase 3: Extension (Week 3-4)
+- [ ] Business Advisor scraper (revenue, visitors, convRate)
+- [ ] Sponsored Solutions scraper (campaign metrics)
+- [ ] Dashboard growth metrics scraper (FFR, chat response)
+- [ ] Extension → POST /api/ecom/metrics endpoint
+
+### Phase 4: Dashboard & Recon (Week 4-5)
+- [ ] KPI cards: GMV, Orders, Conv Rate, AOV, Revenue
+- [ ] Charts: Daily GMV trend, Top Products
+- [ ] Tables: Shop Performance, Product Rankings
+- [ ] Settlement reconciliation engine (bi-weekly/monthly)
+- [ ] Payout vs bank transfer matching
+- [ ] Discrepancy detection + alerting
+- [ ] Cross-stream violation check (Card isolation)
+
+---
+
+> [!IMPORTANT]
+> **Lazada API cần chú ý:**
+> - Date format: **ISO 8601** (`2026-01-15T00:00:00+07:00`)
+> - Order date range max **15 ngày** per request
+> - Pagination dùng **offset + limit** (max 100 orders, 500 products)
+> - Lazada có **multiple marketplace** (VN, PH, TH...) — seller_id khác nhau per market
+> - **Item-level statuses** có thể khác order-level status — cần track cả hai
