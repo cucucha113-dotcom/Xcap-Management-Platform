@@ -21,7 +21,7 @@
 
 ## 1️⃣ CAMPAIGNS — Campaign / Ad Group / Ad
 
-![TikTok Ads Campaigns annotated — 9 data points](assets/ttads_campaigns_ann.png)
+![TikTok Ads Campaigns annotated — 9 data points](assets/ttads_campaigns_ann.jpg)
 
 ### URL
 ```
@@ -93,7 +93,7 @@ ads.tiktok.com/i18n/campaign/create
 
 ## 3️⃣ PAYMENT & FINANCE
 
-![TikTok Ads Payment annotated — 4 data points](assets/ttads_payment_ann.png)
+![TikTok Ads Payment annotated — 4 data points](assets/ttads_payment_ann.jpg)
 
 ### URL
 ```

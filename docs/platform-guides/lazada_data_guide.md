@@ -68,7 +68,7 @@ Lazada Seller Center (sellercenter.lazada.vn)
 
 ### Dashboard — 10 Data Points
 
-![Lazada Dashboard — vị trí 10 fields cần lấy](assets/lazada_dashboard_ann.png)
+![Lazada Dashboard — vị trí 10 fields cần lấy](assets/lazada_dashboard_ann.jpg)
 
 | Ô | Field | Giá trị mẫu | Ghi chú |
 |---|---|---|---|
@@ -84,7 +84,7 @@ Lazada Seller Center (sellercenter.lazada.vn)
 
 ### Order Management — 8 Data Points
 
-![Lazada Orders — vị trí 8 fields cần lấy](assets/lazada_orders_ann.png)
+![Lazada Orders — vị trí 8 fields cần lấy](assets/lazada_orders_ann.jpg)
 
 | Ô | Field | Giá trị mẫu | Ghi chú |
 |---|---|---|---|
@@ -94,7 +94,7 @@ Lazada Seller Center (sellercenter.lazada.vn)
 
 ### Manage Products — 10 Data Points
 
-![Lazada Products — vị trí 10 fields cần lấy](assets/lazada_products_ann.png)
+![Lazada Products — vị trí 10 fields cần lấy](assets/lazada_products_ann.jpg)
 
 | Ô | Field | Giá trị mẫu | Ghi chú |
 |---|---|---|---|
@@ -109,7 +109,7 @@ Lazada Seller Center (sellercenter.lazada.vn)
 
 ### Marketing & Sponsored Solutions — 8 Data Points
 
-![Lazada Marketing — vị trí 8 fields cần lấy](assets/lazada_marketing_ann.png)
+![Lazada Marketing — vị trí 8 fields cần lấy](assets/lazada_marketing_ann.jpg)
 
 | Ô | Field | Giá trị mẫu | Ghi chú |
 |---|---|---|---|

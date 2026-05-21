@@ -9,7 +9,7 @@
 
 ## 1️⃣ CAMPAIGNS — Chiến dịch (Default View: Hiệu quả)
 
-![Campaigns Default View annotated](assets/fb_campaigns_ann.png)
+![Campaigns Default View annotated](assets/fb_campaigns_ann.jpg)
 
 ### Header & Controls
 
@@ -38,7 +38,7 @@
 
 ## 2️⃣ CAMPAIGNS — Scroll phải (Reach, Impressions, CPM)
 
-![Campaigns Performance Columns annotated](assets/fb_performance_ann.png)
+![Campaigns Performance Columns annotated](assets/fb_performance_ann.jpg)
 
 | Ô | Cột trên UI | Field API | Giá trị mẫu | Ghi chú |
 |---|---|---|---|---|
@@ -54,7 +54,7 @@
 
 ## 3️⃣ CAMPAIGNS — Preset "Hiệu quả và lượt click"
 
-![Clicks Column Preset annotated](assets/fb_clicks_ann.png)
+![Clicks Column Preset annotated](assets/fb_clicks_ann.jpg)
 
 > [!IMPORTANT]
 > Chuyển preset cột bằng cách click "Cột: Hiệu quả" → chọn "Hiệu quả và lượt click"
@@ -73,7 +73,7 @@
 
 ## 4️⃣ AD SETS — Nhóm quảng cáo
 
-![Ad Sets level annotated](assets/fb_adsets_ann.png)
+![Ad Sets level annotated](assets/fb_adsets_ann.jpg)
 
 > Tab "Nhóm quảng cáo" — hiển thị 37 ad sets
 
@@ -94,7 +94,7 @@
 
 ## 5️⃣ ADS — Quảng cáo (với Creative thumbnails)
 
-![Ads level with creatives annotated](assets/fb_ads_ann.png)
+![Ads level with creatives annotated](assets/fb_ads_ann.jpg)
 
 > Tab "Quảng cáo" — hiển thị 46 ads với ảnh/video thumbnail
 
@@ -114,7 +114,7 @@
 
 ## 6️⃣ BILLING — Hoạt động thanh toán (Payment Activity)
 
-![Billing Payment Activity annotated](assets/fb_billing_trans_ann.png)
+![Billing Payment Activity annotated](assets/fb_billing_trans_ann.jpg)
 
 > [!IMPORTANT]
 > Trang Billing nằm TÁCH BIỆT khỏi Ads Manager. Truy cập qua: `Lập hóa đơn và thanh toán` (Billing Hub)
@@ -152,7 +152,7 @@
 
 ## 7️⃣ BILLING — Phương thức thanh toán (Payment Methods)
 
-![Billing Payment Methods annotated](assets/fb_billing_methods_ann.png)
+![Billing Payment Methods annotated](assets/fb_billing_methods_ann.jpg)
 
 ### Dữ liệu Payment Methods
 

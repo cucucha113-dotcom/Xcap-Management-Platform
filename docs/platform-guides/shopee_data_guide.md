@@ -63,7 +63,7 @@ Shopee Seller Center (seller.shopee.vn)
 
 ### Dashboard — 13 Data Points
 
-![Shopee Dashboard — vị trí 13 fields cần lấy](assets/shopee_dashboard_ann.png)
+![Shopee Dashboard — vị trí 13 fields cần lấy](assets/shopee_dashboard_ann.jpg)
 
 | Ô | Field | Giá trị mẫu | Ghi chú |
 |---|---|---|---|
@@ -83,7 +83,7 @@ Shopee Seller Center (seller.shopee.vn)
 
 ### My Products — 11 Data Points
 
-![Shopee Products — vị trí 11 fields cần lấy](assets/shopee_products_ann.png)
+![Shopee Products — vị trí 11 fields cần lấy](assets/shopee_products_ann.jpg)
 
 | Ô | Field | Giá trị mẫu | Ghi chú |
 |---|---|---|---|
@@ -99,7 +99,7 @@ Shopee Seller Center (seller.shopee.vn)
 
 ### Marketing — Shopee Ads & Affiliate — 10 Data Points
 
-![Shopee Marketing — vị trí 10 fields cần lấy](assets/shopee_marketing_ann.png)
+![Shopee Marketing — vị trí 10 fields cần lấy](assets/shopee_marketing_ann.jpg)
 
 | Ô | Field | Giá trị mẫu | Ghi chú |
 |---|---|---|---|

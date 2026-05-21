@@ -74,7 +74,7 @@ TikTok Shop Seller Center (seller-vn.tiktok.com)
 
 ### Homepage Dashboard — 10 Data Points
 
-![TikTok Shop Homepage — vị trí 10 fields cần lấy](assets/tts_homepage_ann.png)
+![TikTok Shop Homepage — vị trí 10 fields cần lấy](assets/tts_homepage_ann.jpg)
 
 | Ô | Field | Giá trị mẫu | Ghi chú |
 |---|---|---|---|
@@ -91,7 +91,7 @@ TikTok Shop Seller Center (seller-vn.tiktok.com)
 
 ### Products — 11 Data Points
 
-![TikTok Shop Products — vị trí 11 fields cần lấy](assets/tts_products_ann.png)
+![TikTok Shop Products — vị trí 11 fields cần lấy](assets/tts_products_ann.jpg)
 
 | Ô | Field | Giá trị mẫu | Ghi chú |
 |---|---|---|---|
@@ -109,7 +109,7 @@ TikTok Shop Seller Center (seller-vn.tiktok.com)
 
 ### Analytics — 10 Data Points
 
-![TikTok Shop Analytics — vị trí 10 fields cần lấy](assets/tts_analytics_ann.png)
+![TikTok Shop Analytics — vị trí 10 fields cần lấy](assets/tts_analytics_ann.jpg)
 
 | Ô | Field | Giá trị mẫu | Ghi chú |
 |---|---|---|---|
@@ -126,7 +126,7 @@ TikTok Shop Seller Center (seller-vn.tiktok.com)
 
 ### Finance — 8 Data Points
 
-![TikTok Shop Finance — vị trí 8 fields cần lấy](assets/tts_finance_ann.png)
+![TikTok Shop Finance — vị trí 8 fields cần lấy](assets/tts_finance_ann.jpg)
 
 | Ô | Field | Giá trị mẫu | Ghi chú |
 |---|---|---|---|
@@ -140,7 +140,7 @@ TikTok Shop Seller Center (seller-vn.tiktok.com)
 
 ### Ads Dashboard — 11 Data Points
 
-![TikTok Shop Ads — vị trí 11 fields cần lấy](assets/tts_ads_ann.png)
+![TikTok Shop Ads — vị trí 11 fields cần lấy](assets/tts_ads_ann.jpg)
 
 | Ô | Field | Giá trị mẫu | Ghi chú |
 |---|---|---|---|

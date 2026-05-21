@@ -41,7 +41,7 @@
 
 ## 0️⃣ ACCOUNT SELECTOR — Chọn tài khoản
 
-![Account selector showing 4 MCC accounts](assets/gads_accounts.png)
+![Account selector showing 4 MCC accounts](assets/gads_accounts.jpg)
 
 ### Các tài khoản MCC
 
@@ -56,7 +56,7 @@
 
 ## 1️⃣ MCC OVERVIEW — Tổng quan
 
-![Google Ads MCC Overview annotated — 7 data points](assets/gads_overview_ann.png)
+![Google Ads MCC Overview annotated — 7 data points](assets/gads_overview_ann.jpg)
 
 ### Header
 | Ô | Field | Giá trị mẫu | Ghi chú |
@@ -93,7 +93,7 @@
 
 ## 2️⃣ AD GROUPS — Nhóm quảng cáo
 
-![Google Ads Ad Groups annotated — 7 data points](assets/gads_adgroups_ann.png)
+![Google Ads Ad Groups annotated — 7 data points](assets/gads_adgroups_ann.jpg)
 
 ### URL
 ```
@@ -138,7 +138,7 @@
 
 ## 3️⃣ BILLING — Thanh toán
 
-![Google Ads Billing annotated — 7 data points](assets/gads_billing_ann.png)
+![Google Ads Billing annotated — 7 data points](assets/gads_billing_ann.jpg)
 
 ### URL
 ```
