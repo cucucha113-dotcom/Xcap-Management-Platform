@@ -186,8 +186,8 @@ erDiagram
 | **BM/MCC/BC** | ✅ manage | ✅ manage | 👁️ view | ❌ | ❌ | ❌ |
 | **Browser Profiles** | ✅ manage | ✅ manage | edit | edit (assigned) | ❌ | ❌ |
 | **Campaign CRUD** | ✅ | ✅ | ✅ | ✅ (assigned TKQC) | ❌ | ❌ |
-| **Card Management** | ✅ manage | ✅ view | ❌ | 👁️ view (assigned) | ✅ manage | ❌ |
-| **Finance / Đối soát** | ✅ | ✅ view | ❌ | 👁️ view (assigned) | ✅ edit | ❌ |
+| **Card Management** | ✅ manage | ✅ view | ❌ | ✅ full (assigned) | ✅ manage | ❌ |
+| **Finance / Đối soát** | ✅ | ✅ view | ❌ | ✅ full (assigned) | ✅ edit | ❌ |
 | **Top-up Request** | ✅ approve | ✅ approve (project) | ✅ request | ✅ request | ✅ process | ❌ |
 | **Reports / Export** | ✅ export | ✅ export | 👁️ view | 👁️ view (self) | 👁️ view | ❌ |
 | **Content / Media** | ✅ | ✅ | ✅ view | 👁️ view | ❌ | ✅ edit |
