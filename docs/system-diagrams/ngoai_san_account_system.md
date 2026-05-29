@@ -187,7 +187,7 @@ erDiagram
 | **Browser Profiles** | ✅ manage | ✅ manage | edit | edit (assigned) | ❌ | ❌ |
 | **Campaign CRUD** | ✅ | ✅ | ✅ | ✅ (assigned TKQC) | ❌ | ❌ |
 | **Card Management** | ✅ manage | ✅ view | ❌ | 👁️ view (assigned) | ✅ manage | ❌ |
-| **Finance / Đối soát** | ✅ | ✅ view | ❌ | ❌ | ✅ edit | ❌ |
+| **Finance / Đối soát** | ✅ | ✅ view | ❌ | 👁️ view (assigned) | ✅ edit | ❌ |
 | **Top-up Request** | ✅ approve | ✅ approve (project) | ✅ request | ✅ request | ✅ process | ❌ |
 | **Reports / Export** | ✅ export | ✅ export | 👁️ view | 👁️ view (self) | 👁️ view | ❌ |
 | **Content / Media** | ✅ | ✅ | ✅ view | 👁️ view | ❌ | ✅ edit |
