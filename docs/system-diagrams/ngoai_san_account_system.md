@@ -336,7 +336,156 @@ sequenceDiagram
     API-->>Leader: ✅ Đã gán act_666 cho NV1
 ```
 
-### 5.3 Chuyển NV giữa các DA (trong ngoại sàn)
+### 5.3 Chuyển TKQC từ NV A → NV B
+
+#### Khi nào xảy ra?
+- NV A nghỉ phép / offboard → cần người khác chạy tiếp
+- NV A quản lý kém → chuyển TKQC cho NV giỏi hơn
+- Tái cấu trúc team → phân bổ lại tài sản
+
+#### Flow chi tiết
+
+```mermaid
+sequenceDiagram
+    actor Admin as Leader / GĐ DA
+    participant API as XCAP API
+    participant DB as Database
+    participant Audit as Audit Log
+    
+    Note over Admin: Chuyển act_111 từ NV-A → NV-B
+    
+    Admin->>API: POST /api/assets/transfer
+    Note right of Admin: {<br/>  adAccountIds: ["act_111"],<br/>  fromEmployee: "NV-A",<br/>  toEmployee: "NV-B",<br/>  transferCard: true,<br/>  transferProfile: true,<br/>  effectiveDate: "2026-05-29",<br/>  reason: "Tái phân bổ TKQC"<br/>}
+    
+    API->>API: Validate permissions
+    Note over API: Check:<br/>1. Admin có quyền manage act_111? ✅<br/>2. NV-A đang giữ act_111? ✅<br/>3. NV-B cùng stream ngoai_san? ✅<br/>4. NV-B active? ✅
+    
+    rect rgb(255, 240, 240)
+        Note over API,DB: BƯỚC 1: Thu hồi từ NV-A
+        API->>DB: NV-A.managedAccounts.adAccounts -= act_111
+        API->>DB: NV-A.assetPermission.includeIds -= act_111
+        
+        opt transferCard = true
+            API->>DB: NV-A.managedAccounts.cards -= card_linked_to_act_111
+        end
+        opt transferProfile = true
+            API->>DB: NV-A.managedAccounts.browserProfiles -= profile_for_act_111
+        end
+    end
+    
+    rect rgb(240, 255, 240)
+        Note over API,DB: BƯỚC 2: Gán cho NV-B
+        API->>DB: NV-B.managedAccounts.adAccounts += act_111
+        API->>DB: NV-B.assetPermission.includeIds += act_111
+        
+        opt transferCard = true
+            API->>DB: NV-B.managedAccounts.cards += card_linked_to_act_111
+        end
+        opt transferProfile = true
+            API->>DB: NV-B.managedAccounts.browserProfiles += profile_for_act_111
+        end
+    end
+    
+    rect rgb(240, 240, 255)
+        Note over API,DB: BƯỚC 3: Đánh dấu mốc chuyển giao
+        API->>DB: INSERT asset_transfer_log {<br/>  adAccountId: "act_111",<br/>  fromEmployee: "NV-A",<br/>  toEmployee: "NV-B",<br/>  transferredAt: "2026-05-29T00:00:00",<br/>  transferredBy: "Admin",<br/>  reason: "Tái phân bổ TKQC"<br/>}
+    end
+    
+    API->>Audit: Log { action: "asset_transfer", from: "NV-A", to: "NV-B", accounts: ["act_111"] }
+    API-->>Admin: ✅ Đã chuyển act_111 từ NV-A → NV-B
+```
+
+#### Quy tắc Data Ownership sau chuyển giao
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  TKQC: act_111 — Chuyển từ NV-A → NV-B ngày 29/05/2026                 │
+│                                                                          │
+│  ══════ DATA CỦA NV-A (giữ nguyên, không mất) ═══════                  │
+│                                                                          │
+│  │ Thời gian       │ Campaigns      │ Spend      │ Conv │ Thuộc về │    │
+│  │─────────────────│────────────────│────────────│──────│──────────│    │
+│  │ 01/05 → 28/05   │ Camp-01, 02, 03│ 50,000,000 │  120 │ NV-A     │    │
+│  │                 │                │            │      │          │    │
+│  │  → Reports NV-A vẫn hiện data này                              │    │
+│  │  → Dashboard NV-A vẫn tính spend/conv này vào KPI              │    │
+│  │  → Campaigns cũ vẫn gắn managedBy = NV-A                      │    │
+│  │                                                                │    │
+│  ══════ DATA CỦA NV-B (từ ngày chuyển giao) ═════════              │    │
+│                                                                          │
+│  │ 29/05 → ...     │ Camp mới       │ Spend mới  │ Conv │ NV-B     │    │
+│  │                 │                │            │      │          │    │
+│  │  → Campaigns mới tạo trên act_111 gắn managedBy = NV-B        │    │
+│  │  → Spend từ 29/05 tính vào KPI NV-B                           │    │
+│  │  → Campaigns cũ (Camp-01,02,03) NV-B có thể THẤY nhưng       │    │
+│  │    data KHÔNG tính vào KPI của NV-B                            │    │
+│                                                                          │
+│  ══════ MỐC CHUYỂN GIAO (asset_transfer_log) ═════════                 │
+│                                                                          │
+│  transferredAt: 2026-05-29T00:00:00                                     │
+│  → Mọi query dashboard dùng mốc này để phân tách data                  │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+#### SQL phân tách data theo mốc chuyển giao
+
+```sql
+-- KPI cho NV-B: CHỈ tính data từ ngày nhận TKQC
+SELECT
+  SUM(cr.spend) AS total_spend,
+  SUM(cr.conversions) AS total_conv
+FROM campaign_results cr
+JOIN campaigns c ON cr.campaign_id = c.id
+WHERE c.ad_account_id = 'act_111'
+  AND c.managed_by = 'NV-B'                          -- Campaigns NV-B tạo
+  AND cr.date >= '2026-05-29';                        -- Từ ngày nhận
+
+-- KPI cho NV-A: CHỈ tính data TRƯỚC ngày chuyển
+SELECT
+  SUM(cr.spend) AS total_spend,
+  SUM(cr.conversions) AS total_conv
+FROM campaign_results cr
+JOIN campaigns c ON cr.campaign_id = c.id
+WHERE c.ad_account_id = 'act_111'
+  AND c.managed_by = 'NV-A'                          -- Campaigns NV-A tạo
+  AND cr.date < '2026-05-29';                         -- Trước ngày chuyển
+
+-- Campaigns cũ vẫn chạy (NV-A tạo nhưng NV-B tiếp quản)
+-- → Spend sau 29/05 tính cho NV-B
+SELECT
+  SUM(cr.spend) AS inherited_spend
+FROM campaign_results cr
+JOIN campaigns c ON cr.campaign_id = c.id
+JOIN asset_transfer_log atl ON c.ad_account_id = atl.ad_account_id
+WHERE c.ad_account_id = 'act_111'
+  AND c.managed_by = 'NV-A'                          -- Campaign NV-A tạo
+  AND cr.date >= atl.transferred_at                   -- Nhưng spend sau chuyển giao
+  -- → Tính cho NV-B (người hiện đang quản lý TKQC)
+```
+
+#### Options khi chuyển
+
+| Option | Default | Mô tả |
+|---|---|---|
+| `transferCard` | `true` | Chuyển luôn thẻ thanh toán đang gắn với TKQC |
+| `transferProfile` | `true` | Chuyển luôn browser profile đang dùng cho TKQC |
+| `pauseCampaigns` | `false` | Tạm dừng tất cả campaigns đang chạy trên TKQC |
+| `effectiveDate` | `now` | Ngày hiệu lực chuyển giao (có thể set tương lai) |
+| `notifyEmployees` | `true` | Gửi notification cho cả NV-A và NV-B |
+
+#### Edge Cases
+
+| Case | Xử lý |
+|---|---|
+| NV-A đang offboarded | Vẫn chuyển được — TKQC cần người quản lý mới |
+| NV-B đã có TKQC đầy (>5) | Warning cho Admin, cho phép override |
+| TKQC đang có campaigns chạy | Warning: "3 campaigns đang active", Admin chọn pause hoặc giữ chạy |
+| Chuyển TKQC khác DA | Cần GĐ DA đích đồng ý (hoặc TGĐ approve) |
+| Chuyển hàng loạt | Batch API: `POST /api/assets/transfer/bulk` — chuyển nhiều TKQC cùng lúc |
+| NV-B khác platform | ❌ Block — NV chỉ chạy FB không nhận TKQC Google |
+
+### 5.4 Chuyển NV giữa các DA (trong ngoại sàn)
 
 ```mermaid
 sequenceDiagram
@@ -360,7 +509,7 @@ sequenceDiagram
     API->>Audit: Log { action: "transfer", from: "DA-A", to: "DA-B" }
 ```
 
-### 5.4 Offboard NV Ngoại sàn
+### 5.5 Offboard NV Ngoại sàn
 
 ```mermaid
 sequenceDiagram
