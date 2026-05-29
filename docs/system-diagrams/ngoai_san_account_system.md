@@ -19,7 +19,7 @@ graph TB
             GD_NS["🟡 GĐ Ngoại sàn<br/>(dept_head)<br/>stream: ngoai_san"]
             
             subgraph DA1["📁 Dự án Brand A"]
-                GD_DA1["🟡 GĐ DA Brand A<br/>(dept_head)"]
+                GD_DA1["🟤 GĐ DA Brand A<br/>(project_director)"]
                 L1["🟢 Leader 1<br/>(team_lead)"]
                 NV1["🔵 NV1<br/>marketer<br/>FB + GG"]
                 NV2["🔵 NV2<br/>marketer<br/>FB + TT"]
@@ -27,7 +27,7 @@ graph TB
             end
             
             subgraph DA2["📁 Dự án Brand B"]
-                GD_DA2["🟡 GĐ DA Brand B<br/>(dept_head)"]
+                GD_DA2["🟤 GĐ DA Brand B<br/>(project_director)"]
                 L2["🟢 Leader 2<br/>(team_lead)"]
                 NV4["🔵 NV4<br/>marketer<br/>FB"]
                 NV5["🔵 NV5<br/>marketer<br/>GG + TT"]
@@ -60,7 +60,7 @@ graph TB
 |---|---|---|---|
 | `company_admin` | Tổng GĐ | 1 | Toàn quyền, phê duyệt budget lớn |
 | `dept_head` | GĐ Ngoại sàn | 1 | Quản lý toàn bộ phòng ngoại sàn |
-| `dept_head` | GĐ Dự án | 8 | Quản lý 1-3 dự án, phân bổ TKQC |
+| `project_director` | GĐ Dự án | 8 | Quản lý 1-3 dự án, phân bổ TKQC |
 | `team_lead` | Leader | 24 | Quản lý nhóm 5-8 Media Buyers |
 | `marketer` | Media Buyer | 180 | Chạy QC, quản lý TKQC được gán |
 | `accountant` | Kế toán | 15 | Đối soát chi phí ads, invoices |
@@ -83,7 +83,7 @@ graph TB
   company: ObjectId,               // ref → Company
   department: ObjectId,            // ref → Department (Phòng Ngoại sàn)
   
-  role: "marketer",                // super_admin | company_admin | dept_head | team_lead | marketer | accountant | content_creator
+  role: "marketer",                // super_admin | company_admin | dept_head | project_director | team_lead | marketer | accountant | content_creator
   position: "Media Buyer",         // Vị trí thực tế
   
   stream: ["ngoai_san"],           // ← LOCKED: chỉ ngoại sàn
@@ -118,7 +118,7 @@ erDiagram
         ObjectId _id
         string employeeCode
         string name
-        string role "marketer / team_lead / ..."
+        string role "marketer / team_lead / project_director / ..."
         array stream "ngoai_san"
         array platforms "facebook / google / tiktok_ads"
     }
@@ -150,7 +150,7 @@ erDiagram
         string bmId "BM-123456"
         string platform "facebook / google / tiktok_ads"
         string name "BM XBK Media 01"
-        ObjectId managedBy "dept_head / team_lead"
+        ObjectId managedBy "project_director / team_lead"
         array adAccounts "child TKQC"
     }
     
@@ -185,7 +185,7 @@ erDiagram
 
 ### 3.1 Feature Permissions (Chỉ features liên quan ngoại sàn)
 
-| Feature | company_admin | dept_head (GĐ NS) | dept_head (GĐ DA) | team_lead | marketer | accountant | content |
+| Feature | company_admin | dept_head (GĐ NS) | project_director (GĐ DA) | team_lead | marketer | accountant | content |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **Dashboard** | ✅ All data | ✅ Dept data | ✅ Project data | ✅ Team data | 👁️ Self data | 👁️ Finance | ❌ |
 | **TKQC Management** | ✅ manage | ✅ manage | ✅ manage | ✅ edit | edit (assigned) | ❌ | ❌ |
@@ -197,16 +197,16 @@ erDiagram
 | **Top-up Request** | ✅ approve | ✅ approve | ✅ approve (project) | ✅ request | ✅ request | ✅ process | ❌ |
 | **Reports / Export** | ✅ export | ✅ export | ✅ export | 👁️ view | 👁️ view (self) | 👁️ view | ❌ |
 | **Content / Media** | ✅ | ✅ | ✅ | ✅ view | 👁️ view | ❌ | ✅ edit |
-| **HR / NV** | ✅ manage | ✅ dept | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **HR / NV** | ✅ manage | ✅ dept | ✅ project | ❌ | ❌ | ❌ | ❌ |
 | **Settings** | ✅ edit | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Audit Log** | ✅ | ✅ dept | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Audit Log** | ✅ | ✅ dept | 👁️ project | ❌ | ❌ | ❌ | ❌ |
 
 ### 3.2 Asset Permission — Gán TKQC cho NV
 
 | Mode | Mô tả | Dùng cho |
 |---|---|---|
 | `all` | Thấy toàn bộ TKQC trong stream ngoai_san | TGĐ, GĐ Ngoại sàn |
-| `exclude` | Tất cả **trừ** list cụ thể | GĐ DA (trừ TKQC nhạy cảm) |
+| `exclude` | Tất cả **trừ** list cụ thể | project_director (trừ TKQC nhạy cảm) |
 | `list` | Chỉ TKQC trong danh sách | Media Buyer (3-5 TKQC cụ thể) |
 | `tag` | Theo tag: `DA1`, `brand_A`, `facebook` | Gán theo dự án hoặc platform |
 
@@ -246,7 +246,7 @@ erDiagram
 │  dept_head (GĐ Ngoại sàn)                                          │
 │  └── ALL TKQC ngoại sàn, ALL campaigns, ALL NV trong phòng         │
 │                                                                     │
-│  dept_head (GĐ DA Brand A)                                         │
+│  project_director (GĐ DA Brand A)                                  │
 │  └── TKQC thuộc DA Brand A, campaigns DA, NV trong DA              │
 │                                                                     │
 │  team_lead (Leader 1)                                               │
@@ -286,8 +286,8 @@ erDiagram
 │                                                         │
 │  ✅ super_admin          → Toàn hệ thống                │
 │  ✅ company_admin (TGĐ)  → Toàn company                 │
-│  ⚠️ GĐ DA (nếu quản DA  → Chỉ trong DA đó              │
-│     có cả 2 stream)                                     │
+│  ⚠️ project_director    → Chỉ trong DA đó               │
+│     (nếu quản DA cả 2 stream)                           │
 │  ✅ Kế toán tổng         → Finance data cả 2 stream     │
 │                                                         │
 │  ❌ dept_head (GĐ NS)    → CHỈ ngoại sàn                │
