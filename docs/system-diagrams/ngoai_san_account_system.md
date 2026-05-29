@@ -30,9 +30,8 @@ graph TB
             NV5["🔵 NV5<br/>marketer<br/>GG + TT"]
         end
         
-        subgraph SUPPORT["⚙️ Support (stream: shared — phục vụ ngoại sàn)"]
+        subgraph SUPPORT["⚙️ Support (phục vụ ngoại sàn)"]
             KT["🔵 Kế toán<br/>accountant<br/>Đối soát ads"]
-            CC["🔵 Content Creator<br/>content_creator<br/>Sáng tạo ads"]
         end
     end
     
@@ -46,7 +45,6 @@ graph TB
     L2 --> NV4
     L2 --> NV5
     TGD -.-> KT
-    TGD -.-> CC
 ```
 
 ### Vai trò trong Ngoại sàn
@@ -58,7 +56,6 @@ graph TB
 | `team_lead` | Leader | 24 | Quản lý nhóm 5-8 NVQC |
 | `marketer` | Nhân viên quảng cáo (NVQC) | 180 | Chạy QC, quản lý TKQC được gán |
 | `accountant` | Kế toán | 15 | Đối soát chi phí ads, invoices |
-| `content_creator` | Content | 40 | Upload creatives, quản lý media |
 
 ---
 
@@ -77,7 +74,7 @@ graph TB
   company: ObjectId,               // ref → Company
   department: ObjectId,            // ref → Department (Phòng Ngoại sàn)
   
-  role: "marketer",                // super_admin | company_admin | project_director | team_lead | marketer | accountant | content_creator
+  role: "marketer",                // super_admin | company_admin | project_director | team_lead | marketer | accountant
   position: "Nhân viên quảng cáo", // Vị trí thực tế
   
   stream: ["ngoai_san"],           // ← LOCKED: chỉ ngoại sàn
@@ -179,20 +176,20 @@ erDiagram
 
 ### 3.1 Feature Permissions (Chỉ features liên quan ngoại sàn)
 
-| Feature | company_admin | project_director (GĐ DA) | team_lead | marketer | accountant | content |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Dashboard** | ✅ All data | ✅ Project data | ✅ Team data | 👁️ Self data | 👁️ Finance | ❌ |
-| **TKQC Management** | ✅ manage | ✅ manage | ✅ edit | edit (assigned) | ❌ | ❌ |
-| **BM/MCC/BC** | ✅ manage | ✅ manage | 👁️ view | ❌ | ❌ | ❌ |
-| **Browser Profiles** | ✅ manage | ✅ manage | edit | edit (assigned) | ❌ | ❌ |
-| **Campaign CRUD** | ✅ | ✅ | ✅ | ✅ (assigned TKQC) | ❌ | ❌ |
-| **Card Management** | ✅ manage | ✅ full (assigned) | ✅ full (assigned) | ✅ full (assigned) | ✅ manage | ❌ |
-| **Finance / Đối soát** | ✅ | ✅ full (assigned) | ✅ full (assigned) | ✅ full (assigned) | ✅ edit | ❌ |
-| **Top-up Request** | ✅ approve | ✅ approve (project) | ✅ request | ✅ request | ✅ process | ❌ |
-| **Reports / Export** | ✅ export | ✅ export | 👁️ view | 👁️ view (self) | 👁️ view | ❌ |
-| **HR / NV** | ✅ manage | ✅ project | ❌ | ❌ | ❌ | ❌ |
-| **Settings** | ✅ edit | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Audit Log** | ✅ | 👁️ project | ❌ | ❌ | ❌ | ❌ |
+| Feature | company_admin | project_director (GĐ DA) | team_lead | marketer | accountant |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Dashboard** | ✅ All data | ✅ Project data | ✅ Team data | 👁️ Self data | 👁️ Finance |
+| **TKQC Management** | ✅ manage | ✅ manage | ✅ edit | edit (assigned) | ❌ |
+| **BM/MCC/BC** | ✅ manage | ✅ manage | 👁️ view | ❌ | ❌ |
+| **Browser Profiles** | ✅ manage | ✅ manage | edit | edit (assigned) | ❌ |
+| **Campaign CRUD** | ✅ | ✅ | ✅ | ✅ (assigned TKQC) | ❌ |
+| **Card Management** | ✅ manage | ✅ full (assigned) | ✅ full (assigned) | ✅ full (assigned) | ✅ manage |
+| **Finance / Đối soát** | ✅ | ✅ full (assigned) | ✅ full (assigned) | ✅ full (assigned) | ✅ edit |
+| **Top-up Request** | ✅ approve | ✅ approve (project) | ✅ request | ✅ request | ✅ process |
+| **Reports / Export** | ✅ export | ✅ export | 👁️ view | 👁️ view (self) | 👁️ view |
+| **HR / NV** | ✅ manage | ✅ project | ❌ | ❌ | ❌ |
+| **Settings** | ✅ edit | ❌ | ❌ | ❌ | ❌ |
+| **Audit Log** | ✅ | 👁️ project | ❌ | ❌ | ❌ |
 
 ### 3.2 Asset Permission — Gán TKQC cho NV
 
@@ -282,7 +279,6 @@ erDiagram
 │                                                         │
 │  ❌ team_lead             → CHỈ stream mình              │
 │  ❌ marketer              → CHỈ ngoại sàn                │
-│  ❌ content_creator       → Theo assignment              │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -399,11 +395,10 @@ sequenceDiagram
 
 | Custom Role | Base Role | Feature Override | Asset Override | Use case |
 |---|---|---|---|---|
-| **Senior Media Buyer** | `marketer` | +reports(export), +assetMgmt(manage) | Tag: [DA1, DA2] | MB kinh nghiệm, quản nhiều TKQC |
-| **Junior Media Buyer** | `marketer` | campaign(view+edit), -create | List: [act_001] | MB mới, chỉ chạy 1 TKQC |
+| **Senior NVQC** | `marketer` | +reports(export), +assetMgmt(manage) | Tag: [DA1, DA2] | NVQC kinh nghiệm, quản nhiều TKQC |
+| **Junior NVQC** | `marketer` | campaign(view+edit), -create | List: [act_001] | NVQC mới, chỉ chạy 1 TKQC |
 | **Campaign Manager** | `team_lead` | +finance(view), +reports(export) | Tag: [all_project] | Leader có quyền xem finance |
 | **Ads Accountant** | `accountant` | finance(full), +assetMgmt(view) | Stream: ngoai_san | KT chuyên đối soát ads |
-| **Creative Lead** | `content_creator` | +adMgmt(edit), +reports(view) | All TKQC (view) | Content lead review ads |
 
 ### Tạo Custom Role — Wireframe
 
@@ -576,12 +571,11 @@ const assetScopeFilter = (req, res, next) => {
 
 | Metric | Giá trị |
 |---|---|
-| **Tổng NV ngoại sàn** | ~268 |
+| **Tổng NV ngoại sàn** | ~228 |
 | **NVQC (Nhân viên quảng cáo)** | 180 |
 | **Leaders** | 24 |
 | **GĐ Dự án** | 8 |
 | **Kế toán (ads)** | 15 |
-| **Content** | 40 |
 | **TKQC (Ad Accounts)** | ~630 |
 | **BM/MCC/BC** | ~70 |
 | **Browser Profiles** | ~500 |
