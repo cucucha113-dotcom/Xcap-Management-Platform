@@ -183,7 +183,7 @@ erDiagram
 | **BM/MCC/BC** | ✅ manage | ✅ manage | 👁️ view | ❌ | ❌ |
 | **Browser Profiles** | ✅ manage | ✅ manage | edit | edit (assigned) | ❌ |
 | **Campaign CRUD** | ✅ | ✅ | ✅ | ✅ (assigned TKQC) | ❌ |
-| **Card Management** | ✅ manage | ✅ manage (🔒 spend limit) | ✅ manage (🔒 spend limit) | ✅ manage assigned (🔒 spend limit) | ✅ manage |
+| **Card Management** | ✅ manage | ✅ manage (-limit) | 👁️ view | 👁️ view (assigned) | ✅ manage |
 | **Finance / Đối soát** | ✅ | ✅ full (assigned) | ✅ full (assigned) | ✅ full (assigned) | ✅ edit |
 | **Top-up Request** | ✅ approve | ✅ approve (project) | ✅ request | ✅ request | ✅ process |
 | **Reports / Export** | ✅ export | ✅ export | 👁️ view | 👁️ view (self) | 👁️ view |
