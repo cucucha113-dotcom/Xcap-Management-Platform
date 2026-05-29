@@ -190,7 +190,6 @@ erDiagram
 | **Finance / Đối soát** | ✅ | ✅ full (assigned) | ✅ full (assigned) | ✅ full (assigned) | ✅ edit | ❌ |
 | **Top-up Request** | ✅ approve | ✅ approve (project) | ✅ request | ✅ request | ✅ process | ❌ |
 | **Reports / Export** | ✅ export | ✅ export | 👁️ view | 👁️ view (self) | 👁️ view | ❌ |
-| **Content / Media** | ✅ | ✅ | ✅ view | 👁️ view | ❌ | ✅ edit |
 | **HR / NV** | ✅ manage | ✅ project | ❌ | ❌ | ❌ | ❌ |
 | **Settings** | ✅ edit | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **Audit Log** | ✅ | 👁️ project | ❌ | ❌ | ❌ | ❌ |
